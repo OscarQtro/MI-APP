@@ -2,10 +2,12 @@ import { View, StyleSheet, Keyboard } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { useState, useEffect } from "react";
+import { useThemedStyles } from "../hooks/useThemedStyles";
 
 type Props = { children?: React.ReactNode };
 
 export default function SceneDecorImages({ children }: Props) {
+  const { theme, highContrast, colorBlindMode } = useThemedStyles();
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
@@ -28,36 +30,68 @@ export default function SceneDecorImages({ children }: Props) {
     };
   }, []);
 
+  // Calcular opacidad base según el modo de accesibilidad y teclado
+  const getImageOpacity = (baseOpacity: number) => {
+    if (highContrast) return 0; // Ocultar completamente en alto contraste
+    if (colorBlindMode) return baseOpacity * 0.6; // Reducir en modo daltónico
+    return isKeyboardVisible ? baseOpacity * 0.3 : baseOpacity;
+  };
+
   return (
     <View style={styles.container}>
-      {/* Fondo degradado */}
+      {/* Fondo degradado - se adapta al tema */}
       <LinearGradient
-        colors={["#00B4D8", "#FFEB85"]}
+        colors={[theme.colors.gradTop, theme.colors.gradBottom]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Nubes arriba (franja) - fijas con opacidad cuando hay teclado */}
-      <Image
-        source={require("../assets/ui/CLOUDS.webp")}
-        style={[styles.clouds, { opacity: isKeyboardVisible ? 0.3 : 1 }]}
-        contentFit="contain"
-        transition={120}
-      />
+      {/* Overlay semi-transparente para mejorar legibilidad en modos de accesibilidad */}
+      {(highContrast || colorBlindMode) && (
+        <View 
+          style={[
+            StyleSheet.absoluteFill, 
+            { 
+              backgroundColor: highContrast 
+                ? 'rgba(255,255,255,0.15)' 
+                : 'rgba(255,255,255,0.1)',
+            }
+          ]} 
+        />
+      )}
 
-      {/* Árboles abajo (franja) - fijos con opacidad cuando hay teclado */}
-      <Image
-        source={require("../assets/ui/TREE.webp")}
-        style={[styles.trees, { opacity: isKeyboardVisible ? 0.3 : 1 }]}
-        contentFit="cover"
-        transition={120}
-      />
+      {/* Nubes arriba - se ocultan en alto contraste */}
+      {!highContrast && (
+        <Image
+          source={require("../assets/ui/CLOUDS.webp")}
+          style={[styles.clouds, { opacity: getImageOpacity(1) }]}
+          contentFit="contain"
+          transition={120}
+        />
+      )}
 
-      {/* Logo centrado (franja) - posición absoluta como antes pero con opacidad */}
+      {/* Árboles abajo - se ocultan en alto contraste */}
+      {!highContrast && (
+        <Image
+          source={require("../assets/ui/TREE.webp")}
+          style={[styles.trees, { opacity: getImageOpacity(1) }]}
+          contentFit="cover"
+          transition={120}
+        />
+      )}
+
+      {/* Logo centrado - siempre visible pero con opacidad ajustada */}
       <Image
         source={require("../assets/ui/LOGO.webp")}
-        style={[styles.logo, { opacity: isKeyboardVisible ? 0.3 : 1 }]}
+        style={[
+          styles.logo, 
+          { 
+            opacity: highContrast 
+              ? (isKeyboardVisible ? 0.8 : 1) 
+              : getImageOpacity(1) 
+          }
+        ]}
         contentFit="contain"
         transition={120}
       />

@@ -1,19 +1,25 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { SafeAreaView, View, Text, StyleSheet, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 
 import SectionGrid from "../../components/ui/SectionGrid";
 import Header from "../../components/ui/header";
-import AccessibilitySystem from "../../components/ui/AccessibilitySystem";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 export default function AlumnoHome() {
   const router = useRouter();
-  const { theme, fontSizes } = useThemedStyles();
+  const { theme, fontSizes, colorBlindMode, screenReaderEnabled, speakNavigation, speakText } = useThemedStyles();
 
   // En la vida real, viene de tu store/auth  
   const userName = "Oscar";
+
+  // Anunciar la pantalla cuando se carga
+  useEffect(() => {
+    if (screenReaderEnabled) {
+      speakNavigation("Inicio del Alumno", `Bienvenido ${userName}. Tienes dos secciones de actividades disponibles: Lenguas y Saberes y Pensamiento Científico.`);
+    }
+  }, [screenReaderEnabled, userName, speakNavigation]);
 
   const lenguas = [
     {
@@ -21,14 +27,28 @@ export default function AlumnoHome() {
       title: "CazaLetras",
       subtitle: "Lengua",
       image: require("../../assets/actividades/cazaletras.png"),
-      onPress: () => router.push({ pathname: "/actividad/[id]", params: { id: "cazaletras" } }),
+      accessibilityLabel: "Actividad CazaLetras de Lengua",
+      accessibilityHint: "Juego para encontrar y cazar letras. Toca para iniciar la actividad.",
+      onPress: () => {
+        if (screenReaderEnabled) {
+          speakNavigation("CazaLetras", "Iniciando juego de caza de letras");
+        }
+        router.push({ pathname: "/actividad/[id]", params: { id: "cazaletras" } });
+      },
     },
     {
       id: "dilo-tu",
       title: "¡DiloTú!",
       subtitle: "Lengua",
       image: require("../../assets/actividades/dilotu.png"),
-      onPress: () => router.push({ pathname: "/actividad/[id]", params: { id: "dilo-tu" } }),
+      accessibilityLabel: "Actividad DiloTú de Lengua",
+      accessibilityHint: "Juego de expresión oral y vocabulario. Toca para iniciar la actividad.",
+      onPress: () => {
+        if (screenReaderEnabled) {
+          speakNavigation("DiloTú", "Iniciando actividad de expresión oral");
+        }
+        router.push({ pathname: "/actividad/[id]", params: { id: "dilo-tu" } });
+      },
     },
   ];
 
@@ -38,14 +58,28 @@ export default function AlumnoHome() {
       title: "GeoSopa",
       subtitle: "P. Matemático",
       image: require("../../assets/actividades/geosopa.png"),
-      onPress: () => router.push({ pathname: "/actividad/[id]", params: { id: "geosopa" } }),
+      accessibilityLabel: "Actividad GeoSopa de Pensamiento Matemático",
+      accessibilityHint: "Juego de geometría y formas. Toca para iniciar la actividad.",
+      onPress: () => {
+        if (screenReaderEnabled) {
+          speakNavigation("GeoSopa", "Iniciando juego de geometría y formas");
+        }
+        router.push({ pathname: "/actividad/[id]", params: { id: "geosopa" } });
+      },
     },
     {
       id: "puntogo",
       title: "PuntoGo",
-      subtitle: "P. Matemático",
+      subtitle: "P. Matemático", 
       image: require("../../assets/actividades/puntogo.png"),
-      onPress: () => router.push({ pathname: "/actividad/[id]", params: { id: "puntogo" } }),
+      accessibilityLabel: "Actividad PuntoGo de Pensamiento Matemático",
+      accessibilityHint: "Juego de ubicación espacial y puntos. Toca para iniciar la actividad.",
+      onPress: () => {
+        if (screenReaderEnabled) {
+          speakNavigation("PuntoGo", "Iniciando juego de ubicación espacial");
+        }
+        router.push({ pathname: "/actividad/[id]", params: { id: "puntogo" } });
+      },
     },
   ];
 
@@ -78,9 +112,6 @@ export default function AlumnoHome() {
       style={StyleSheet.absoluteFill}
     >
       <SafeAreaView style={{ flex: 1 }}>
-        {/* Accessibility System */}
-        <AccessibilitySystem />
-        
         {/* Header Component */}
         <Header title="KIDIQUO" />
         

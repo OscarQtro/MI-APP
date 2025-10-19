@@ -15,7 +15,7 @@ export default function Header({
   showLanguageToggle = true, 
   showProfile = true 
 }: HeaderProps) {
-  const { theme, fontSizes, highContrast } = useThemedStyles();
+  const { theme, fontSizes, highContrast, colorBlindMode } = useThemedStyles();
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -170,19 +170,27 @@ export default function Header({
       paddingHorizontal: 20,
       paddingTop: 40,
       paddingBottom: 15,
-      backgroundColor: highContrast ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.1)',
-      borderBottomWidth: highContrast ? 2 : 0,
-      borderBottomColor: theme.colors.border,
+      backgroundColor: highContrast 
+        ? 'rgba(0, 0, 0, 0.8)' 
+        : colorBlindMode 
+          ? 'rgba(0, 119, 190, 0.3)' // Azul distintivo
+          : 'rgba(0, 0, 0, 0.1)',
+      borderBottomWidth: (highContrast || colorBlindMode) ? 2 : 0,
+      borderBottomColor: colorBlindMode ? theme.colors.primary : theme.colors.border,
     },
     headerButton: {
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: highContrast ? theme.colors.primary : 'rgba(255, 255, 255, 0.2)',
+      backgroundColor: highContrast 
+        ? theme.colors.primary 
+        : colorBlindMode 
+          ? theme.colors.primary
+          : 'rgba(255, 255, 255, 0.2)',
       justifyContent: 'center',
       alignItems: 'center',
-      borderWidth: highContrast ? 2 : 0,
-      borderColor: theme.colors.textLight,
+      borderWidth: (highContrast || colorBlindMode) ? 2 : 0,
+      borderColor: colorBlindMode ? theme.colors.secondary : theme.colors.textLight,
     },
     headerTitle: {
       color: theme.colors.textLight,

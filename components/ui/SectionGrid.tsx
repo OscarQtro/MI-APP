@@ -9,6 +9,8 @@ type Item = {
   subtitle?: string;
   image?: any;
   onPress: () => void;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
 type Props = {
@@ -17,7 +19,7 @@ type Props = {
 };
 
 export default function SectionGrid({ title, items }: Props) {
-  const { theme, fontSizes } = useThemedStyles();
+  const { theme, fontSizes, colorBlindMode, screenReaderEnabled, speakText } = useThemedStyles();
 
   const dynamicStyles = StyleSheet.create({
     section: { 
@@ -29,9 +31,12 @@ export default function SectionGrid({ title, items }: Props) {
       fontWeight: "900", 
       color: theme.colors.textPrimary, 
       marginBottom: 12,
-      textShadowColor: theme.colors.shadow,
+      textShadowColor: colorBlindMode ? 'rgba(0,0,0,0.6)' : theme.colors.shadow,
       textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: theme.colors === theme.colors ? 0 : 2,
+      textShadowRadius: colorBlindMode ? 2 : 0,
+      borderBottomWidth: colorBlindMode ? 2 : 0,
+      borderBottomColor: colorBlindMode ? theme.colors.primary : 'transparent',
+      paddingBottom: colorBlindMode ? 4 : 0,
     },
     grid: {
       flexDirection: 'row',
@@ -42,16 +47,28 @@ export default function SectionGrid({ title, items }: Props) {
   });
 
   return (
-    <View style={dynamicStyles.section}>
-      <Text style={dynamicStyles.sectionTitle}>{title}</Text>
+    <View 
+      style={dynamicStyles.section}
+      accessibilityRole="list"
+      accessibilityLabel={`Sección ${title}`}
+    >
+      <Text 
+        style={dynamicStyles.sectionTitle}
+        accessibilityRole="header"
+        accessibilityLabel={`Sección ${title}, ${items.length} actividades disponibles`}
+      >
+        {title}
+      </Text>
       <View style={dynamicStyles.grid}>
-        {items.map((item) => (
+        {items.map((item, index) => (
           <ActivityCard
             key={item.id}
             title={item.title}
             subtitle={item.subtitle}
             image={item.image}
             onPress={item.onPress}
+            accessibilityLabel={item.accessibilityLabel}
+            accessibilityHint={item.accessibilityHint}
           />
         ))}
       </View>

@@ -7,15 +7,28 @@ type Props = {
   subtitle?: string;
   image?: any;          // require('…') o { uri: '…' }
   onPress?: () => void;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
-export default function ActivityCard({ title, subtitle, image, onPress }: Props) {
-  const { theme, fontSizes, highContrast } = useThemedStyles();
+export default function ActivityCard({ 
+  title, 
+  subtitle, 
+  image, 
+  onPress, 
+  accessibilityLabel, 
+  accessibilityHint 
+}: Props) {
+  const { theme, fontSizes, highContrast, colorBlindMode, screenReaderEnabled, speakText } = useThemedStyles();
 
   const dynamicStyles = StyleSheet.create({
     card: {
       width: "48%",
-      backgroundColor: highContrast ? theme.colors.background : "#ffcfdd",
+      backgroundColor: highContrast 
+        ? theme.colors.background 
+        : colorBlindMode 
+          ? theme.colors.surface
+          : "#ffcfdd",
       borderRadius: 16,
       padding: 12,
       elevation: 3,
@@ -23,8 +36,8 @@ export default function ActivityCard({ title, subtitle, image, onPress }: Props)
       shadowOpacity: highContrast ? 0.8 : 0.15,
       shadowRadius: 6,
       shadowOffset: { width: 0, height: 3 },
-      borderWidth: highContrast ? 2 : 0,
-      borderColor: theme.colors.border,
+      borderWidth: (highContrast || colorBlindMode) ? 2 : 0,
+      borderColor: colorBlindMode ? theme.colors.primary : theme.colors.border,
     },
     posterWrap: {
       borderRadius: 12,
@@ -61,13 +74,24 @@ export default function ActivityCard({ title, subtitle, image, onPress }: Props)
     },
   });
 
+  const handlePress = () => {
+    if (screenReaderEnabled && title) {
+      speakText(`Seleccionado ${title}`, { priority: 'high' });
+    }
+    onPress?.();
+  };
+
   return (
     <Pressable 
       style={({ pressed }) => [
         dynamicStyles.card, 
         pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] }
       ]} 
-      onPress={onPress}
+      onPress={handlePress}
+      accessibilityLabel={accessibilityLabel || `${title}${subtitle ? ` - ${subtitle}` : ''}`}
+      accessibilityHint={accessibilityHint || `Toca para abrir la actividad ${title}`}
+      accessibilityRole="button"
+      accessible={true}
     >
       <View style={dynamicStyles.posterWrap}>
         {image ? (

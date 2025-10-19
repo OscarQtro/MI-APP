@@ -50,6 +50,35 @@ export const highContrastTheme = {
   },
 };
 
-export const getTheme = (highContrast: boolean) => {
-  return highContrast ? highContrastTheme : normalTheme;
+export const colorBlindTheme = {
+  colors: {
+    // Paleta optimizada para daltonismo (principalmente deuteranopia y protanopia)
+    gradTop: '#0077BE', // Azul más fuerte
+    gradBottom: '#FFD700', // Amarillo dorado
+    primary: '#0066CC', // Azul distintivo
+    secondary: '#FFA500', // Naranja distinguible
+    background: '#FFFFFF',
+    surface: '#F8F9FA',
+    textPrimary: '#1B1B1B',
+    textSecondary: '#2B2B2B',
+    textLight: '#FFFFFF',
+    textMuted: '#6C757D',
+    trunk: '#8B4513', // Marrón distintivo
+    leaf1: '#4169E1', // Azul real para diferenciarse
+    leaf2: '#1E90FF', // Azul dodger
+    glow: 'rgba(255,215,0,0.35)', // Amarillo dorado
+    border: '#E9ECEF',
+    shadow: 'rgba(0,0,0,0.1)',
+    // Estados optimizados para daltonismo
+    success: '#0066CC', // Azul en lugar de verde
+    warning: '#FF8C00', // Naranja oscuro
+    danger: '#8B0000', // Rojo oscuro distinguible
+    info: '#4169E1', // Azul real
+  },
+};
+
+export const getTheme = (highContrast: boolean, colorBlindMode: boolean) => {
+  if (highContrast) return highContrastTheme;
+  if (colorBlindMode) return colorBlindTheme;
+  return normalTheme;
 };

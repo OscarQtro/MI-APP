@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import {
   Alert,
@@ -20,7 +20,7 @@ const ROLES = ["Alumno", "Profesor"] as const;
 type Rol = typeof ROLES[number];
 
 export default function Registro() {
-  const { theme, fontSizes, highContrast } = useThemedStyles();
+  const { theme, fontSizes, highContrast, colorBlindMode, screenReaderEnabled, speakNavigation, speakAction } = useThemedStyles();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -28,17 +28,48 @@ export default function Registro() {
   const [rol, setRol] = useState<Rol>("Alumno");
   const [loading, setLoading] = useState(false);
 
+  // Anunciar la pantalla cuando se carga
+  React.useEffect(() => {
+    if (screenReaderEnabled) {
+      speakNavigation("Pantalla de Registro", "Completa todos los campos para crear tu nueva cuenta.");
+    }
+  }, [screenReaderEnabled, speakNavigation]);
+
   const onRegister = async () => {
-    if (name.trim().length < 3) return Alert.alert("Nombre inválido", "Escribe tu nombre completo.");
-    if (!isEmail(email)) return Alert.alert("Correo inválido", "Revisa el formato del correo.");
-    if (pass.length < 6) return Alert.alert("Contraseña corta", "Mínimo 6 caracteres.");
+    if (name.trim().length < 3) {
+      if (screenReaderEnabled) {
+        speakAction("Error de validación", "Nombre inválido. Escribe tu nombre completo.");
+      }
+      return Alert.alert("Nombre inválido", "Escribe tu nombre completo.");
+    }
+    if (!isEmail(email)) {
+      if (screenReaderEnabled) {
+        speakAction("Error de validación", "Correo inválido. Revisa el formato del correo.");
+      }
+      return Alert.alert("Correo inválido", "Revisa el formato del correo.");
+    }
+    if (pass.length < 6) {
+      if (screenReaderEnabled) {
+        speakAction("Error de validación", "Contraseña corta. Debe tener mínimo 6 caracteres.");
+      }
+      return Alert.alert("Contraseña corta", "Mínimo 6 caracteres.");
+    }
 
     try {
       setLoading(true);
+      if (screenReaderEnabled) {
+        speakAction("Creando cuenta", "Registrando nueva cuenta, por favor espera.");
+      }
       // TODO: llamada real a tu backend /auth/register  { name, email, pass, rol }
+      if (screenReaderEnabled) {
+        speakAction("Registro exitoso", "Cuenta creada correctamente. Dirigiendo a la pantalla de ingreso.");
+      }
       Alert.alert("Registro correcto", "Ahora inicia sesión.");
       router.replace("/ingreso"); // ← ir a Ingresar
     } catch {
+      if (screenReaderEnabled) {
+        speakAction("Error de registro", "No se pudo registrar. Intenta nuevamente.");
+      }
       Alert.alert("Error", "No se pudo registrar.");
     } finally {
       setLoading(false);
@@ -49,38 +80,54 @@ export default function Registro() {
   const dynamicStyles = StyleSheet.create({
     title: {
       ...a.title,
-      color: highContrast ? theme.colors.textPrimary : a.title.color,
+      color: highContrast 
+        ? theme.colors.textPrimary 
+        : colorBlindMode 
+          ? theme.colors.textPrimary
+          : a.title.color,
       fontSize: fontSizes.title * 1.2,
-      textShadowColor: highContrast ? 'rgba(0,0,0,0.8)' : 'transparent',
+      textShadowColor: (highContrast || colorBlindMode) ? 'rgba(0,0,0,0.8)' : 'transparent',
       textShadowOffset: { width: 1, height: 1 },
       textShadowRadius: 2,
-      borderBottomWidth: highContrast ? 2 : 0,
-      borderBottomColor: theme.colors.textPrimary,
-      paddingBottom: highContrast ? 8 : 0,
+      borderBottomWidth: (highContrast || colorBlindMode) ? 2 : 0,
+      borderBottomColor: colorBlindMode ? theme.colors.primary : theme.colors.textPrimary,
+      paddingBottom: (highContrast || colorBlindMode) ? 8 : 0,
     },
     label: {
       ...a.label,
-      color: highContrast ? theme.colors.textPrimary : a.label.color,
+      color: highContrast 
+        ? theme.colors.textPrimary 
+        : colorBlindMode 
+          ? theme.colors.textPrimary
+          : a.label.color,
       fontSize: fontSizes.base,
-      fontWeight: highContrast ? '800' : a.label.fontWeight || '600',
+      fontWeight: (highContrast || colorBlindMode) ? '800' : a.label.fontWeight || '600',
     },
     inputPill: {
       ...a.inputPill,
-      backgroundColor: highContrast ? theme.colors.background : a.inputPill.backgroundColor,
-      borderWidth: highContrast ? 2 : 1,
-      borderColor: highContrast ? theme.colors.textPrimary : 'rgba(255,255,255,0.3)',
-      color: highContrast ? theme.colors.textPrimary : a.inputPill.color,
+      backgroundColor: highContrast 
+        ? theme.colors.background 
+        : colorBlindMode 
+          ? theme.colors.surface
+          : a.inputPill.backgroundColor,
+      borderWidth: (highContrast || colorBlindMode) ? 2 : 1,
+      borderColor: highContrast 
+        ? theme.colors.textPrimary 
+        : colorBlindMode 
+          ? theme.colors.primary
+          : 'rgba(255,255,255,0.3)',
+      color: (highContrast || colorBlindMode) ? theme.colors.textPrimary : a.inputPill.color,
       fontSize: fontSizes.base,
     },
     primaryBtn: {
       ...a.primaryBtn,
-      backgroundColor: highContrast ? theme.colors.primary : a.primaryBtn.backgroundColor,
-      borderWidth: highContrast ? 3 : 0,
-      borderColor: highContrast ? theme.colors.textPrimary : 'transparent',
+      backgroundColor: (highContrast || colorBlindMode) ? theme.colors.primary : a.primaryBtn.backgroundColor,
+      borderWidth: (highContrast || colorBlindMode) ? 3 : 0,
+      borderColor: (highContrast || colorBlindMode) ? theme.colors.textPrimary : 'transparent',
     },
     primaryText: {
       ...a.primaryText,
-      color: highContrast ? theme.colors.textLight : a.primaryText.color,
+      color: (highContrast || colorBlindMode) ? theme.colors.textLight : a.primaryText.color,
       fontSize: fontSizes.base,
       fontWeight: '800',
     },
@@ -117,6 +164,16 @@ export default function Registro() {
       fontSize: fontSizes.base,
       fontWeight: '800',
     },
+    showText: {
+      ...a.showText,
+      color: highContrast 
+        ? theme.colors.textPrimary 
+        : colorBlindMode 
+          ? theme.colors.primary
+          : a.showText.color,
+      fontSize: fontSizes.caption,
+      fontWeight: (highContrast || colorBlindMode) ? '700' : a.showText.fontWeight || '500',
+    },
   });
 
   return (
@@ -129,71 +186,124 @@ export default function Registro() {
         <StatusBar style="light" />
 
         <View style={a.form}>
-          <Text style={a.title}>REGISTRO</Text>
+          <Text style={dynamicStyles.title}>REGISTRO</Text>
 
         {/* Nombre */}
         <View style={a.group}>
-          <Text style={a.label}>NOMBRE COMPLETO</Text>
+          <Text style={dynamicStyles.label}>NOMBRE COMPLETO</Text>
           <TextInput
-            style={a.inputPill}
+            style={dynamicStyles.inputPill}
             placeholder="Tu nombre"
-            placeholderTextColor="rgba(255,255,255,0.9)"
+            placeholderTextColor={
+              highContrast 
+                ? theme.colors.textMuted 
+                : colorBlindMode 
+                  ? theme.colors.textMuted
+                  : "rgba(255,255,255,0.9)"
+            }
             value={name}
             onChangeText={setName}
             autoCapitalize="words"
             textContentType="name"
+            accessibilityLabel="Campo de nombre completo"
+            accessibilityHint="Ingresa tu nombre completo"
+            accessible={true}
           />
         </View>
 
         {/* Correo */}
         <View style={a.group}>
-          <Text style={a.label}>CORREO</Text>
+          <Text style={dynamicStyles.label}>CORREO</Text>
           <TextInput
-            style={a.inputPill}
+            style={dynamicStyles.inputPill}
             placeholder="Correo Electrónico"
-            placeholderTextColor="rgba(255,255,255,0.9)"
+            placeholderTextColor={
+              highContrast 
+                ? theme.colors.textMuted 
+                : colorBlindMode 
+                  ? theme.colors.textMuted
+                  : "rgba(255,255,255,0.9)"
+            }
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
             value={email}
             onChangeText={setEmail}
             textContentType="emailAddress"
+            accessibilityLabel="Campo de correo electrónico"
+            accessibilityHint="Ingresa tu dirección de correo electrónico"
+            accessible={true}
           />
         </View>
 
         {/* Contraseña */}
         <View style={a.group}>
-          <Text style={a.label}>CONTRASEÑA</Text>
+          <Text style={dynamicStyles.label}>CONTRASEÑA</Text>
           <View style={a.passwordRow}>
             <TextInput
-              style={[a.inputPill, { flex: 1 }]}
+              style={[dynamicStyles.inputPill, { flex: 1 }]}
               placeholder="Contraseña"
-              placeholderTextColor="rgba(255,255,255,0.9)"
+              placeholderTextColor={
+                highContrast 
+                  ? theme.colors.textMuted 
+                  : colorBlindMode 
+                    ? theme.colors.textMuted
+                    : "rgba(255,255,255,0.9)"
+              }
               secureTextEntry={!show}
               value={pass}
               onChangeText={setPass}
               autoCapitalize="none"
               textContentType="newPassword"
+              accessibilityLabel="Campo de contraseña"
+              accessibilityHint="Ingresa tu contraseña, debe tener al menos 6 caracteres"
+              accessible={true}
             />
-            <Pressable onPress={() => setShow(v => !v)} style={a.showBtn}>
-              <Text style={a.showText}>{show ? "Ocultar" : "Mostrar"}</Text>
+            <Pressable 
+              onPress={() => {
+                setShow(v => !v);
+                if (screenReaderEnabled) {
+                  speakAction(show ? "Ocultar contraseña" : "Mostrar contraseña", "");
+                }
+              }} 
+              style={a.showBtn}
+              accessibilityLabel={show ? "Ocultar contraseña" : "Mostrar contraseña"}
+              accessibilityHint="Toca para cambiar la visibilidad de la contraseña"
+              accessibilityRole="button"
+            >
+              <Text style={dynamicStyles.showText}>{show ? "Ocultar" : "Mostrar"}</Text>
             </Pressable>
           </View>
         </View>
 
         {/* Rol */}
         <View style={a.group}>
-          <Text style={a.label}>SELECCIONAR ROL</Text>
+          <Text style={dynamicStyles.label}>SELECCIONAR ROL</Text>
           <View style={a.chipsRow}>
             {ROLES.map((r) => {
               const active = rol === r;
               return (
                 <Pressable
                   key={r}
-                  style={[a.chip, active && a.chipActive]}
-                  onPress={() => setRol(r)}
+                  style={[
+                    dynamicStyles.chip, 
+                    active && dynamicStyles.chipActive
+                  ]}
+                  onPress={() => {
+                    setRol(r);
+                    if (screenReaderEnabled) {
+                      speakAction("Rol seleccionado", `Rol ${r} seleccionado`);
+                    }
+                  }}
+                  accessibilityLabel={`Rol ${r}`}
+                  accessibilityHint={`Seleccionar rol como ${r}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
                 >
-                  <Text style={[a.chipText, active && a.chipTextActive]}>{r}</Text>
+                  <Text style={[
+                    dynamicStyles.chipText, 
+                    active && dynamicStyles.chipTextActive
+                  ]}>{r}</Text>
                 </Pressable>
               );
             })}
@@ -202,15 +312,30 @@ export default function Registro() {
 
         {/* Botón principal */}
         <Pressable
-          style={[a.primaryBtn, loading && a.disabled]}
+          style={[dynamicStyles.primaryBtn, loading && a.disabled]}
           disabled={loading}
           onPress={onRegister}
+          accessibilityLabel="Botón crear cuenta"
+          accessibilityHint="Toca para crear tu nueva cuenta con los datos ingresados"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: loading }}
         >
-          <Text style={a.primaryText}>{loading ? "Registrando..." : "CREAR CUENTA"}</Text>
+          <Text style={dynamicStyles.primaryText}>{loading ? "Registrando..." : "CREAR CUENTA"}</Text>
         </Pressable>
 
-        <Pressable style={a.linkBtn} onPress={() => router.back()}>
-          <Text style={a.linkText}>← Volver</Text>
+        <Pressable 
+          style={a.linkBtn} 
+          onPress={() => {
+            if (screenReaderEnabled) {
+              speakNavigation("Volver", "Regresando a la pantalla anterior");
+            }
+            router.back();
+          }}
+          accessibilityLabel="Volver"
+          accessibilityHint="Toca para regresar a la pantalla anterior"
+          accessibilityRole="button"
+        >
+          <Text style={dynamicStyles.linkText}>← Volver</Text>
         </Pressable>
         </View>
       </SceneDecorImages>

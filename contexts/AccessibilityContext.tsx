@@ -12,7 +12,9 @@ interface AccessibilityContextType {
   setColorBlindMode: (value: boolean) => void;
   setFontSize: (size: FontSize) => void;
   setScreenReaderEnabled: (value: boolean) => void;
-  speakText: (text: string) => void;
+  speakText: (text: string, options?: { priority?: 'high' | 'normal'; interrupt?: boolean }) => void;
+  speakNavigation: (screenName: string, description?: string) => void;
+  speakAction: (action: string, result?: string) => void;
   getFontSize: () => {
     base: number;
     title: number;
@@ -33,17 +35,39 @@ export function AccessibilityProvider({ children }: AccessibilityProviderProps) 
   const [fontSize, setFontSize] = useState<FontSize>('normal');
   const [screenReaderEnabled, setScreenReaderEnabled] = useState(false);
 
-  const speakText = (text: string) => {
+  const speakText = (text: string, options?: { priority?: 'high' | 'normal'; interrupt?: boolean }) => {
     if (screenReaderEnabled) {
       try {
+        // Interrumpir el habla actual si es necesario
+        if (options?.interrupt) {
+          Speech.stop();
+        }
+        
         Speech.speak(text, {
           language: 'es-MX',
           pitch: 1.0,
           rate: 0.8,
+          voice: undefined, // Usar voz por defecto del sistema
         });
       } catch (error) {
         console.warn('Error al reproducir texto:', error);
       }
+    }
+  };
+
+  const speakNavigation = (screenName: string, description?: string) => {
+    if (screenReaderEnabled) {
+      const navigationText = description 
+        ? `Navegando a ${screenName}. ${description}` 
+        : `Navegando a ${screenName}`;
+      speakText(navigationText, { priority: 'high', interrupt: true });
+    }
+  };
+
+  const speakAction = (action: string, result?: string) => {
+    if (screenReaderEnabled) {
+      const actionText = result ? `${action}. ${result}` : action;
+      speakText(actionText, { priority: 'normal' });
     }
   };
 
@@ -69,6 +93,8 @@ export function AccessibilityProvider({ children }: AccessibilityProviderProps) 
         setFontSize,
         setScreenReaderEnabled,
         speakText,
+        speakNavigation,
+        speakAction,
         getFontSize,
       }}
     >

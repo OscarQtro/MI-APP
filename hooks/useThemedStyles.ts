@@ -2,8 +2,17 @@ import { useAccessibility } from '../contexts/AccessibilityContext';
 import { getTheme } from '../styles/theme';
 
 export function useThemedStyles() {
-  const { highContrast, fontSize, getFontSize } = useAccessibility();
-  const theme = getTheme(highContrast);
+  const { 
+    highContrast, 
+    colorBlindMode, 
+    fontSize, 
+    screenReaderEnabled,
+    getFontSize, 
+    speakText, 
+    speakNavigation, 
+    speakAction 
+  } = useAccessibility();
+  const theme = getTheme(highContrast, colorBlindMode);
   const fontSizes = getFontSize();
 
   return {
@@ -11,5 +20,10 @@ export function useThemedStyles() {
     fontSizes,
     fontSize,
     highContrast,
+    colorBlindMode,
+    screenReaderEnabled,
+    speakText,
+    speakNavigation,
+    speakAction,
   };
 }

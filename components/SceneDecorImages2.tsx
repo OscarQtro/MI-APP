@@ -1,43 +1,60 @@
 import { View, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
+import { useThemedStyles } from "../hooks/useThemedStyles";
 
 type Props = { children?: React.ReactNode };
 
 export default function SceneDecorImages({ children }: Props) {
+  const { theme, highContrast, colorBlindMode } = useThemedStyles();
+
   return (
     <View style={styles.container}>
-      {/* Fondo degradado */}
+      {/* Fondo degradado - se adapta al tema */}
       <LinearGradient
-        colors={["#00B4D8", "#FFEB85"]}
+        colors={[theme.colors.gradTop, theme.colors.gradBottom]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Nubes arriba (franja) */}
-      <Image
-        source={require("../assets/ui/CLOUDS.webp")}
-        style={styles.clouds}
-        contentFit="contain"
-        transition={120}
-      />
+      {/* Nubes arriba - se ocultan en modo alto contraste */}
+      {!highContrast && (
+        <Image
+          source={require("../assets/ui/CLOUDS.webp")}
+          style={[
+            styles.clouds,
+            colorBlindMode && { opacity: 0.7 }
+          ]}
+          contentFit="contain"
+          transition={120}
+        />
+      )}
 
-      {/* Logo centrado (franja) */}
+      {/* Logo centrado */}
       <Image
         source={require("../assets/ui/LOGO.webp")}
-        style={styles.logo}
+        style={[
+          styles.logo,
+          highContrast && { opacity: 1 },
+          colorBlindMode && { opacity: 0.9 }
+        ]}
         contentFit="contain"
         transition={120}
       />
 
-      {/* Árboles abajo (franja) */}
-      <Image
-        source={require("../assets/ui/TREE.webp")}
-        style={styles.trees}
-        contentFit="cover"
-        transition={120}
-      />
+      {/* Árboles abajo - se ocultan en modo alto contraste */}
+      {!highContrast && (
+        <Image
+          source={require("../assets/ui/TREE.webp")}
+          style={[
+            styles.trees,
+            colorBlindMode && { opacity: 0.7 }
+          ]}
+          contentFit="cover"
+          transition={120}
+        />
+      )}
 
       {/* Zona central para logo + botones */}
       <View style={styles.content}>{children}</View>
