@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -20,7 +20,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "minSdkVersion": 26,
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
       "package": "com.oscarqtro.kidiquo"
     },
     "web": {
@@ -33,9 +34,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "12af91c9-349d-46b4-a5f7-d4b5e1ee9482"
+        "projectId": "21e5adf1-465a-4cbc-adee-c3bf2c6372b5"
       }
-    },
-    "owner": "kelgut"
+    }
   }
 }
