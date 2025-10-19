@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 import { Asset } from "expo-asset";
+import { AccessibilityProvider } from "../contexts/AccessibilityContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -22,6 +23,10 @@ export default function RootLayout() {
 
   if (!ready) return null;
 
-  return <Stack screenOptions={{ headerShown: false, animation: "fade" }} />;
+  return (
+    <AccessibilityProvider>
+      <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
+    </AccessibilityProvider>
+  );
 }
 

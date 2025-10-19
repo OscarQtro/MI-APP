@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import ActivityCard from "./ActivityCard";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
 
 type Item = {
   id: string;
@@ -16,29 +17,46 @@ type Props = {
 };
 
 export default function SectionGrid({ title, items }: Props) {
+  const { theme, fontSizes } = useThemedStyles();
+
+  const dynamicStyles = StyleSheet.create({
+    section: { 
+      marginTop: 24, 
+      paddingHorizontal: 16,
+    },
+    sectionTitle: { 
+      fontSize: fontSizes.title, 
+      fontWeight: "900", 
+      color: theme.colors.textPrimary, 
+      marginBottom: 12,
+      textShadowColor: theme.colors.shadow,
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: theme.colors === theme.colors ? 0 : 2,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+  });
+
   return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <FlatList
-        data={items}
-        keyExtractor={(it) => it.id}
-        numColumns={2}
-        columnWrapperStyle={{ justifyContent: "space-between" }}
-        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-        renderItem={({ item }) => (
+    <View style={dynamicStyles.section}>
+      <Text style={dynamicStyles.sectionTitle}>{title}</Text>
+      <View style={dynamicStyles.grid}>
+        {items.map((item) => (
           <ActivityCard
+            key={item.id}
             title={item.title}
             subtitle={item.subtitle}
             image={item.image}
             onPress={item.onPress}
           />
-        )}
-      />
+        ))}
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  section: { marginTop: 24, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: "900", color: "#1b1b1b", marginBottom: 12 },
-});
+// Estilos base eliminados - ahora se usan los dinámicos

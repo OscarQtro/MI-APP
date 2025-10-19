@@ -54,16 +54,16 @@ export default function SceneDecorImages({ children }: Props) {
         transition={120}
       />
 
+      {/* Logo centrado (franja) - posición absoluta con opacidad cuando hay teclado */}
+      <Image
+        source={require("../assets/ui/LOGO.webp")}
+        style={[styles.logo, { opacity: isKeyboardVisible ? 0.3 : 1 }]}
+        contentFit="contain"
+        transition={120}
+      />
+
       {/* Contenido que se mueve con el teclado */}
       <View style={styles.movableContent}>
-        {/* Logo centrado - se mueve con el teclado */}
-        <Image
-          source={require("../assets/ui/LOGO.webp")}
-          style={styles.logo}
-          contentFit="contain"
-          transition={120}
-        />
-
         {/* Zona central para logo + botones */}
         <View style={styles.content}>{children}</View>
       </View>
@@ -87,20 +87,22 @@ const styles = StyleSheet.create({
     right: 0,
     height: 210, // ajusta según tu imagen
   },
+  logo: {
+    position: "absolute",
+    top: 200,
+    left: 0,
+    right: 0,
+    height: 120, // ajusta según tu imagen
+  },
   movableContent: {
     flex: 1,
-    paddingTop: 200, // Espacio para que no se superponga con las nubes
-  },
-  logo: {
-    width: '100%',
-    height: 120, // ajusta según tu imagen
-    marginBottom: 20,
   },
   content: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingTop: 150, // deja aire sobre el logo
     paddingHorizontal: 24,
-    paddingBottom: 220, // Espacio para que no se superponga con los árboles
+    paddingBottom: 0, // deja aire sobre árboles
   },
 });

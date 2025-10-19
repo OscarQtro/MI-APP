@@ -8,16 +8,19 @@ import {
   Text,
   TextInput,
   View,
+  StyleSheet,
 } from "react-native";
 import { router } from "expo-router";
 import SceneDecorImages from "../components/SceneDecorImages-auth2"; // mismo decorado que usas en ingreso
 import { authStyles as a } from "../styles/auth.styles";
+import { useThemedStyles } from "../hooks/useThemedStyles";
 
 const isEmail = (v: string) => /\S+@\S+\.\S+/.test(v);
 const ROLES = ["Alumno", "Profesor"] as const;
 type Rol = typeof ROLES[number];
 
 export default function Registro() {
+  const { theme, fontSizes, highContrast } = useThemedStyles();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -41,6 +44,80 @@ export default function Registro() {
       setLoading(false);
     }
   };
+
+  // Estilos dinámicos para accesibilidad
+  const dynamicStyles = StyleSheet.create({
+    title: {
+      ...a.title,
+      color: highContrast ? theme.colors.textPrimary : a.title.color,
+      fontSize: fontSizes.title * 1.2,
+      textShadowColor: highContrast ? 'rgba(0,0,0,0.8)' : 'transparent',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 2,
+      borderBottomWidth: highContrast ? 2 : 0,
+      borderBottomColor: theme.colors.textPrimary,
+      paddingBottom: highContrast ? 8 : 0,
+    },
+    label: {
+      ...a.label,
+      color: highContrast ? theme.colors.textPrimary : a.label.color,
+      fontSize: fontSizes.base,
+      fontWeight: highContrast ? '800' : a.label.fontWeight || '600',
+    },
+    inputPill: {
+      ...a.inputPill,
+      backgroundColor: highContrast ? theme.colors.background : a.inputPill.backgroundColor,
+      borderWidth: highContrast ? 2 : 1,
+      borderColor: highContrast ? theme.colors.textPrimary : 'rgba(255,255,255,0.3)',
+      color: highContrast ? theme.colors.textPrimary : a.inputPill.color,
+      fontSize: fontSizes.base,
+    },
+    primaryBtn: {
+      ...a.primaryBtn,
+      backgroundColor: highContrast ? theme.colors.primary : a.primaryBtn.backgroundColor,
+      borderWidth: highContrast ? 3 : 0,
+      borderColor: highContrast ? theme.colors.textPrimary : 'transparent',
+    },
+    primaryText: {
+      ...a.primaryText,
+      color: highContrast ? theme.colors.textLight : a.primaryText.color,
+      fontSize: fontSizes.base,
+      fontWeight: '800',
+    },
+    linkText: {
+      ...a.linkText,
+      color: highContrast ? theme.colors.textPrimary : a.linkText.color,
+      fontSize: fontSizes.base,
+      fontWeight: highContrast ? '700' : a.linkText.fontWeight || '500',
+      textShadowColor: highContrast ? 'rgba(0,0,0,0.5)' : 'transparent',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 1,
+    },
+    chip: {
+      ...a.chip,
+      backgroundColor: highContrast ? theme.colors.background : a.chip.backgroundColor,
+      borderWidth: highContrast ? 2 : a.chip.borderWidth,
+      borderColor: highContrast ? theme.colors.textPrimary : a.chip.borderColor,
+    },
+    chipActive: {
+      ...a.chipActive,
+      backgroundColor: highContrast ? theme.colors.primary : a.chipActive.backgroundColor,
+      borderWidth: highContrast ? 3 : 1,
+      borderColor: highContrast ? theme.colors.textPrimary : a.chipActive.borderColor,
+    },
+    chipText: {
+      ...a.chipText,
+      color: highContrast ? theme.colors.textPrimary : a.chipText.color,
+      fontSize: fontSizes.base,
+      fontWeight: highContrast ? '700' : a.chipText.fontWeight || '700',
+    },
+    chipTextActive: {
+      ...a.chipTextActive,
+      color: highContrast ? theme.colors.textLight : a.chipTextActive.color,
+      fontSize: fontSizes.base,
+      fontWeight: '800',
+    },
+  });
 
   return (
     <KeyboardAvoidingView

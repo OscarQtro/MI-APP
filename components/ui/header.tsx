@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
 
 interface HeaderProps {
   title: string;
@@ -14,6 +15,7 @@ export default function Header({
   showLanguageToggle = true, 
   showProfile = true 
 }: HeaderProps) {
+  const { theme, fontSizes, highContrast } = useThemedStyles();
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -159,11 +161,67 @@ export default function Header({
     );
   };
 
+  // Crear estilos dinámicos basados en el tema
+  const dynamicStyles = StyleSheet.create({
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingTop: 40,
+      paddingBottom: 15,
+      backgroundColor: highContrast ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.1)',
+      borderBottomWidth: highContrast ? 2 : 0,
+      borderBottomColor: theme.colors.border,
+    },
+    headerButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: highContrast ? theme.colors.primary : 'rgba(255, 255, 255, 0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: highContrast ? 2 : 0,
+      borderColor: theme.colors.textLight,
+    },
+    headerTitle: {
+      color: theme.colors.textLight,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      fontSize: fontSizes.title,
+      textShadowColor: highContrast ? 'rgba(0,0,0,0.8)' : 'transparent',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 2,
+    },
+    modalContent: {
+      backgroundColor: theme.colors.background,
+      borderRadius: 20,
+      padding: 20,
+      width: '80%',
+      maxWidth: 400,
+      borderWidth: highContrast ? 2 : 0,
+      borderColor: theme.colors.border,
+    },
+    modalTitle: {
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginBottom: 20,
+      color: theme.colors.textPrimary,
+      fontSize: fontSizes.title,
+    },
+    settingText: {
+      flex: 1,
+      marginLeft: 15,
+      fontSize: fontSizes.base,
+      color: theme.colors.textPrimary,
+    },
+  });
+
   return (
-    <View style={styles.header}>
+    <View style={dynamicStyles.header}>
       {/* Settings Button */}
       <TouchableOpacity
-        style={styles.headerButton}
+        style={dynamicStyles.headerButton}
         onPress={handleSettingsPress}
         accessibilityLabel="Configuraciones"
         accessibilityRole="button"
@@ -172,7 +230,7 @@ export default function Header({
       </TouchableOpacity>
 
       {/* Title */}
-      <Text style={styles.headerTitle}>
+      <Text style={dynamicStyles.headerTitle}>
         {title}
       </Text>
 
@@ -440,15 +498,6 @@ export default function Header({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 40, // Aumentado para mover el header más abajo
-    paddingBottom: 15,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-  },
   headerButton: {
     width: 40,
     height: 40,
