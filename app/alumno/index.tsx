@@ -1,7 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaView, View, Text, StyleSheet, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../config/firebase';
+import { getUser } from '../../services/database';
 
 import SectionGrid from "../../components/ui/SectionGrid";
 import Header from "../../components/ui/header";
@@ -10,16 +13,47 @@ import { useThemedStyles } from "../../hooks/useThemedStyles";
 export default function AlumnoHome() {
   const router = useRouter();
   const { theme, fontSizes, colorBlindMode, screenReaderEnabled, speakNavigation, speakText } = useThemedStyles();
+  
+  // Estado para el nombre del usuario dinámico
+  const [userName, setUserName] = useState("Usuario");
+  const [loading, setLoading] = useState(true);
 
-  // En la vida real, viene de tu store/auth  
-  const userName = "Oscar";
-
+  // Obtener información del usuario actual
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          // Obtener información del usuario desde Firestore
+          const userData = await getUser(user.uid);
+          if (userData) {
+            setUserName(userData.name || "Usuario");
+          } else {
+            // Si no hay datos en Firestore, usar el email como fallback
+            const emailName = user.email?.split('@')[0] || "Usuario";
+            setUserName(emailName);
+          }
+        } catch (error) {
+          console.error('Error obteniendo datos del usuario:', error);
+          // Usar email como fallback en caso de error
+          const emailName = user.email?.split('@')[0] || "Usuario";
+          setUserName(emailName);
+        }
+      } else {
+        // Usuario no autenticado, redirigir al login
+        router.replace('/ingreso');
+      }
+      setLoading(false);
+    });
+    
+    return () => unsubscribe();
+  }, [router]);
+  
   // Anunciar la pantalla cuando se carga
   useEffect(() => {
-    if (screenReaderEnabled) {
+    if (screenReaderEnabled && !loading) {
       speakNavigation("Inicio del Alumno", `Bienvenido ${userName}. Tienes dos secciones de actividades disponibles: Lenguas y Saberes y Pensamiento Científico.`);
     }
-  }, [screenReaderEnabled, userName, speakNavigation]);
+  }, [screenReaderEnabled, userName, speakNavigation, loading]);
 
   const lenguas = [
     {
@@ -103,6 +137,24 @@ export default function AlumnoHome() {
       color: theme.colors.textPrimary,
     },
   });
+
+  // Mostrar indicador de carga mientras se obtiene la información
+  if (loading) {
+    return (
+      <LinearGradient
+        colors={[theme.colors.gradTop, theme.colors.gradBottom]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      >
+        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: theme.colors.textPrimary, fontSize: fontSizes.title }}>
+            Cargando...
+          </Text>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
 
   return (
     <LinearGradient
