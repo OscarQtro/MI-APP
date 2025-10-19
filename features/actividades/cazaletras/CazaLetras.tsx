@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Pressable, Platform, StatusBar } from "react-na
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import ActivityLayout from "../common/ActivityLayout";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 
 const WORDS = [
   "SOL", "LUNA", "CASA", "PERRO", "GATO", "ROCA", "RANA", "FUEGO",
@@ -45,6 +46,8 @@ export default function CazaLetras() {
   const [aciertos, setAciertos] = useState(0);
   const [round, setRound] = useState(1);
   const [estado, setEstado] = useState<"idle" | "ok" | "bad">("idle");
+  
+  const { theme, fontSizes, screenReaderEnabled, speakText, speakAction } = useThemedStyles();
 
   // corrige pool inicial según objetivo real
   React.useEffect(() => {
@@ -62,7 +65,10 @@ export default function CazaLetras() {
     setAciertos(0);
     setRound(1);
     setEstado("idle");
-  }, []);
+    if (screenReaderEnabled) {
+      speakAction("Nueva partida iniciada", `Palabra objetivo: ${first}`);
+    }
+  }, [screenReaderEnabled, speakAction]);
 
   const resetRound = useCallback(
     (nextWord?: string) => {
@@ -71,8 +77,11 @@ export default function CazaLetras() {
       setPool(buildPoolFor(word));
       setSeleccion([]);
       setEstado("idle");
+      if (screenReaderEnabled) {
+        speakAction("Nueva ronda", `Palabra objetivo: ${word}`);
+      }
     },
-    [usedWords]
+    [usedWords, screenReaderEnabled, speakAction]
   );
 
   const pick = useCallback(
@@ -82,13 +91,23 @@ export default function CazaLetras() {
       const nextStr = next.join("");
       setSeleccion(next);
 
+      if (screenReaderEnabled) {
+        speakText(`Letra seleccionada: ${letter}. Formando: ${nextStr}`);
+      }
+
       if (nextStr === objetivo) {
         setEstado("ok");
         setAciertos((n) => n + 1);
         setUsedWords((arr) => [...arr, objetivo]);
+        if (screenReaderEnabled) {
+          speakAction("¡Correcto!", `Has formado la palabra ${objetivo}`);
+        }
       } else if (!objetivo.startsWith(nextStr)) {
         // fallo: resetea selección y marca estado
         setEstado("bad");
+        if (screenReaderEnabled) {
+          speakAction("Incorrecto", "La secuencia no forma la palabra. Reiniciando.");
+        }
         // micro-retraso visual para que el usuario vea el rojo
         setTimeout(() => {
           setSeleccion([]);
@@ -96,13 +115,16 @@ export default function CazaLetras() {
         }, 350);
       }
     },
-    [seleccion, objetivo, estado]
+    [seleccion, objetivo, estado, screenReaderEnabled, speakText, speakAction]
   );
 
   const borrarSeleccion = useCallback(() => {
     setSeleccion([]);
     setEstado("idle");
-  }, []);
+    if (screenReaderEnabled) {
+      speakAction("Selección borrada", "Puedes empezar de nuevo");
+    }
+  }, [screenReaderEnabled, speakAction]);
 
   const siguiente = useCallback(() => {
     if (estado !== "ok") return;
@@ -119,9 +141,9 @@ export default function CazaLetras() {
   const terminado = round > ROUNDS_TOTAL || (round === ROUNDS_TOTAL && estado === "ok");
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       <LinearGradient
-        colors={["#00B4D8", "#FFEB85"]}
+        colors={[theme.colors.gradTop, theme.colors.gradBottom]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -132,15 +154,32 @@ export default function CazaLetras() {
           <View style={styles.content}>
 
             <View style={styles.headerInfo}>
-              <Text style={styles.round}>Ronda {round} / {ROUNDS_TOTAL}</Text>
-              <Text style={styles.hits}>Aciertos: {aciertos}</Text>
+              <Text style={[styles.round, { color: theme.colors.textPrimary, fontSize: fontSizes.base }]}>
+                Ronda {round} / {ROUNDS_TOTAL}
+              </Text>
+              <Text style={[styles.hits, { color: theme.colors.textPrimary, fontSize: fontSizes.base }]}>
+                Aciertos: {aciertos}
+              </Text>
             </View>
 
             <View style={styles.obj}>
-              <Text style={[styles.objText, estado === "ok" && styles.ok, estado === "bad" && styles.bad]}>
+              <Text 
+                style={[
+                  styles.objText, 
+                  { 
+                    color: theme.colors.textPrimary,
+                    fontSize: fontSizes.title 
+                  },
+                  estado === "ok" && { color: theme.colors.success },
+                  estado === "bad" && { color: theme.colors.danger }
+                ]}
+                accessible={true}
+                accessibilityLabel={`Palabra objetivo: ${objetivo}`}
+                onPress={() => screenReaderEnabled && speakText(`Palabra objetivo: ${objetivo}`)}
+              >
                 {objetivo}
               </Text>
-              <Text style={styles.helper}>
+              <Text style={[styles.helper, { color: theme.colors.textSecondary, fontSize: fontSizes.caption }]}>
                 Toca las letras en orden. Mantén presionado cualquier letra para <Text style={{fontWeight:"900"}}>borrar</Text>.
               </Text>
             </View>
@@ -151,47 +190,97 @@ export default function CazaLetras() {
                   key={`${L}-${idx}`}
                   onPress={() => pick(L)}
                   onLongPress={borrarSeleccion}
-                  style={({ pressed }) => [styles.cell, pressed && { transform: [{ scale: 0.95 }] }]}
+                  style={({ pressed }) => [
+                    styles.cell, 
+                    { backgroundColor: theme.colors.surface },
+                    pressed && { transform: [{ scale: 0.95 }] }
+                  ]}
+                  accessible={true}
+                  accessibilityLabel={`Letra ${L}`}
+                  accessibilityHint="Toca para seleccionar, mantén presionado para borrar"
                 >
                   <LinearGradient
-                    colors={estado === "bad" ? ["#ff5a5f", "#ff7b7f"] : ["#ff92c2", "#ffb3da"]}
+                    colors={estado === "bad" ? [theme.colors.danger, theme.colors.danger] : [theme.colors.primary, theme.colors.secondary]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.cellGradient}
                   >
-                    <Text style={styles.cellText}>{L}</Text>
+                    <Text style={[styles.cellText, { fontSize: fontSizes.base }]}>{L}</Text>
                   </LinearGradient>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={styles.sel}>
-              Seleccionado: <Text style={styles.selStrong}>{seleccion.join(" ") || "—"}</Text>
+            <Text 
+              style={[styles.sel, { color: theme.colors.textSecondary, fontSize: fontSizes.caption }]}
+              accessible={true}
+              accessibilityLabel={`Letras seleccionadas: ${seleccion.join(", ") || "ninguna"}`}
+            >
+              Seleccionado: <Text style={[styles.selStrong, { color: theme.colors.textPrimary }]}>{seleccion.join(" ") || "—"}</Text>
             </Text>
 
             {/* Barra de acciones */}
             <View style={styles.actions}>
-              <Pressable style={({pressed}) => [styles.btn, pressed && styles.btnPressed]} onPress={borrarSeleccion}>
-                <Text style={styles.btnText}>Borrar</Text>
+              <Pressable 
+                style={({pressed}) => [
+                  styles.btn, 
+                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.primary },
+                  pressed && styles.btnPressed
+                ]} 
+                onPress={borrarSeleccion}
+                accessible={true}
+                accessibilityLabel="Borrar selección actual"
+              >
+                <Text style={[styles.btnText, { color: theme.colors.primary, fontSize: fontSizes.base }]}>Borrar</Text>
               </Pressable>
 
               {estado === "ok" && (
-                <Pressable style={({pressed}) => [styles.btnPrimary, pressed && styles.btnPrimaryPressed]} onPress={siguiente}>
-                  <Text style={styles.btnPrimaryText}>{terminado ? "Finalizado" : "Siguiente"}</Text>
+                <Pressable 
+                  style={({pressed}) => [
+                    styles.btnPrimary, 
+                    { backgroundColor: theme.colors.success },
+                    pressed && styles.btnPrimaryPressed
+                  ]} 
+                  onPress={siguiente}
+                  accessible={true}
+                  accessibilityLabel={terminado ? "Juego finalizado" : "Continuar a siguiente ronda"}
+                >
+                  <Text style={[styles.btnPrimaryText, { fontSize: fontSizes.base }]}>{terminado ? "Finalizado" : "Siguiente"}</Text>
                 </Pressable>
               )}
 
-              <Pressable style={({pressed}) => [styles.btnGhost, pressed && styles.btnGhostPressed]} onPress={resetAll}>
-                <Text style={styles.btnGhostText}>Reiniciar</Text>
+              <Pressable 
+                style={({pressed}) => [
+                  styles.btnGhost, 
+                  { 
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.primary 
+                  },
+                  pressed && styles.btnGhostPressed
+                ]} 
+                onPress={resetAll}
+                accessible={true}
+                accessibilityLabel="Reiniciar juego completo"
+              >
+                <Text style={[styles.btnGhostText, { color: theme.colors.primary, fontSize: fontSizes.base }]}>Reiniciar</Text>
               </Pressable>
             </View>
 
             {terminado && (
-              <View style={styles.finishCard}>
-                <Text style={styles.finishTitle}>¡Completado! 🎉</Text>
-                <Text style={styles.finishSubtitle}>Aciertos: {aciertos} de {ROUNDS_TOTAL}</Text>
-                <Pressable style={({pressed}) => [styles.btnPrimary, pressed && styles.btnPrimaryPressed]} onPress={resetAll}>
-                  <Text style={styles.btnPrimaryText}>Jugar de nuevo</Text>
+              <View style={[styles.finishCard, { backgroundColor: theme.colors.surface }]}>
+                <Text style={[styles.finishTitle, { color: theme.colors.textPrimary, fontSize: fontSizes.title }]}>¡Completado! 🎉</Text>
+                <Text style={[styles.finishSubtitle, { color: theme.colors.textSecondary, fontSize: fontSizes.base }]}>Aciertos: {aciertos} de {ROUNDS_TOTAL}</Text>
+                <Pressable 
+                  style={({pressed}) => [
+                    styles.btnPrimary, 
+                    { backgroundColor: theme.colors.success },
+                    pressed && styles.btnPrimaryPressed
+                  ]} 
+                  onPress={resetAll}
+                  accessible={true}
+                  accessibilityLabel="Comenzar nueva partida"
+                >
+                  <Text style={[styles.btnPrimaryText, { fontSize: fontSizes.base }]}>Jugar de nuevo</Text>
                 </Pressable>
               </View>
             )}

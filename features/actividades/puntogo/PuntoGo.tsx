@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import ActivityLayout from "../common/ActivityLayout";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 
 /**
  * PuntoGo: Identificación de coordenadas en un plano cartesiano con propósito.
@@ -40,6 +41,8 @@ function buildTargets(count: number): Cell[] {
 }
 
 export default function PuntoGo() {
+  const { theme, fontSizes, screenReaderEnabled, speakText, speakAction, speakNavigation } = useThemedStyles();
+  
   const [targets, setTargets] = useState<Cell[]>(() => buildTargets(ROUNDS_TOTAL));
   const [round, setRound] = useState(0);          // 0..ROUNDS_TOTAL-1
   const [hits, setHits] = useState(0);
@@ -77,6 +80,15 @@ export default function PuntoGo() {
       } catch {}
     })();
   }, []);
+
+  // Announce game instructions when screen reader is enabled
+  useEffect(() => {
+    if (screenReaderEnabled && current) {
+      setTimeout(() => {
+        speakText(`Juego PuntoGo. Eres un repartidor. Debes entregar ${ROUNDS_TOTAL} paquetes en diferentes coordenadas. Ronda ${round + 1}: entrega el paquete en la coordenada ${current.x}, ${current.y}. Toca una celda en la cuadrícula para hacer la entrega.`);
+      }, 1000);
+    }
+  }, [screenReaderEnabled, current, round]);
 
   // Guardar progreso
   async function persist(nextRound: number, nextHits: number, nextRevealed: string, nextScore: number) {
@@ -137,7 +149,15 @@ export default function PuntoGo() {
       setUsedHintThisRound(false);
       persist(nextRound, nextHits, nextRevealed, nextScore);
 
+      // Screen reader feedback for correct answer
+      if (screenReaderEnabled) {
+        speakAction(`¡Correcto! Paquete entregado en coordenada ${pick.x}, ${pick.y}. Ganaste ${gained} puntos. ${nextRound < ROUNDS_TOTAL ? `Siguiente entrega: ronda ${nextRound + 1}` : '¡Ruta completada!'}`);
+      }
+
       if (nextRound >= ROUNDS_TOTAL) {
+        if (screenReaderEnabled) {
+          speakAction(`¡Felicidades! Has completado todas las entregas. Puntuación final: ${nextScore} puntos.`);
+        }
         Alert.alert(
           "¡Ruta completada!",
           `Entregas: ${nextHits}/${ROUNDS_TOTAL}\nPuntuación: ${nextScore} 🎉`
@@ -146,6 +166,11 @@ export default function PuntoGo() {
     } else {
       // fallo suave: solo cuenta intento y feedback visual
       setAttemptsThisRound(n => n + 1);
+      
+      // Screen reader feedback for incorrect answer
+      if (screenReaderEnabled) {
+        speakText(`Incorrecto. Seleccionaste coordenada ${pick.x}, ${pick.y}. El objetivo está en otra posición. Intentos en esta ronda: ${attemptsThisRound + 1}.`);
+      }
     }
   }
 
@@ -153,6 +178,11 @@ export default function PuntoGo() {
   function useHint() {
     if (round >= ROUNDS_TOTAL || usedHintThisRound || !current) return;
     setUsedHintThisRound(true);
+    
+    // Screen reader feedback for hint
+    if (screenReaderEnabled) {
+      speakAction(`Pista activada: el paquete debe entregarse en la columna ${current.x} y fila ${current.y}. Se aplicará una penalización de 30 puntos.`);
+    }
   }
 
   // Reiniciar sesión (nueva ruta)
@@ -167,13 +197,18 @@ export default function PuntoGo() {
     setAttemptsThisRound(0);
     setUsedHintThisRound(false);
     persist(0, 0, "", 0);
+    
+    // Screen reader feedback for reset
+    if (screenReaderEnabled) {
+      speakAction("Juego reiniciado. Nueva ruta de entrega generada. Primera entrega en coordenada " + fresh[0].x + ", " + fresh[0].y + ".");
+    }
   }
 
   return (
     <View style={styles.screen}>
       {/* Fondo degradado global */}
       <LinearGradient
-        colors={["#00B4D8", "#FFEB85"]}
+        colors={[theme.colors.gradTop, theme.colors.gradBottom]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -198,26 +233,79 @@ export default function PuntoGo() {
             {round < ROUNDS_TOTAL ? (
               <View style={styles.targetBox}>
                 
-                <Text style={styles.targetValue}>
+                <Text style={[styles.targetValue, { 
+                  color: theme.colors.textPrimary, 
+                  fontSize: fontSizes.subtitle 
+                }]}>
                   📍 Objetivo: ({current?.x}, {current?.y})
                 </Text>
 
                 <View style={styles.actions}>
-                  <Pressable onPress={useHint} disabled={usedHintThisRound} style={({pressed}) => [styles.btn, pressed && styles.btnPressed, usedHintThisRound && styles.btnDisabled]}>
-                    <Text style={styles.btnText}>💡 Pista</Text>
+                  <Pressable 
+                    onPress={useHint} 
+                    disabled={usedHintThisRound} 
+                    style={({pressed}) => [
+                      styles.btn, 
+                      { backgroundColor: usedHintThisRound ? theme.colors.textMuted : theme.colors.secondary },
+                      pressed && !usedHintThisRound && styles.btnPressed
+                    ]}
+                    accessible={true}
+                    accessibilityLabel="Pista para encontrar el objetivo"
+                    accessibilityHint={usedHintThisRound ? "Ya usaste la pista en esta ronda" : "Muestra la fila y columna correctas, con penalización de puntos"}
+                  >
+                    <Text style={[styles.btnText, { 
+                      fontSize: fontSizes.base, 
+                      color: usedHintThisRound ? theme.colors.textSecondary : theme.colors.textLight 
+                    }]}>💡 Pista</Text>
                   </Pressable>
-                  <Pressable onPress={resetSession} style={({pressed}) => [styles.btnGhost, pressed && styles.btnGhostPressed]}>
-                    <Text style={styles.btnGhostText}>↺ Reiniciar</Text>
+                  <Pressable 
+                    onPress={resetSession} 
+                    style={({pressed}) => [
+                      styles.btnGhost, 
+                      { borderColor: theme.colors.textSecondary },
+                      pressed && styles.btnGhostPressed
+                    ]}
+                    accessible={true}
+                    accessibilityLabel="Reiniciar juego"
+                    accessibilityHint="Comenzar una nueva ruta con objetivos diferentes"
+                  >
+                    <Text style={[styles.btnGhostText, { 
+                      fontSize: fontSizes.base, 
+                      color: theme.colors.textSecondary
+                    }]}>↺ Reiniciar</Text>
                   </Pressable>
                 </View>
               </View>
             ) : (
               <View style={styles.endBox}>
-                <Text style={styles.endTitle}>Ruta finalizada</Text>
-                <Text style={styles.endSub}>Aciertos: {hits} / {ROUNDS_TOTAL}</Text>
-                <Text style={styles.endSub}>Puntuación: {score}</Text>
-                <Pressable onPress={resetSession} style={({ pressed }) => [styles.resetBtn, pressed && { opacity: 0.9 }]}>
-                  <Text style={{ color: "#fff", fontWeight: "900" }}>Jugar de nuevo</Text>
+                <Text style={[styles.endTitle, { 
+                  color: theme.colors.textPrimary, 
+                  fontSize: fontSizes.title 
+                }]}>Ruta finalizada</Text>
+                <Text style={[styles.endSub, { 
+                  color: theme.colors.textSecondary, 
+                  fontSize: fontSizes.base 
+                }]}>Aciertos: {hits} / {ROUNDS_TOTAL}</Text>
+                <Text style={[styles.endSub, { 
+                  color: theme.colors.textSecondary, 
+                  fontSize: fontSizes.base 
+                }]}>Puntuación: {score}</Text>
+                <Pressable 
+                  onPress={resetSession} 
+                  style={({ pressed }) => [
+                    styles.resetBtn, 
+                    { backgroundColor: theme.colors.primary },
+                    pressed && { opacity: 0.9 }
+                  ]}
+                  accessible={true}
+                  accessibilityLabel="Jugar de nuevo"
+                  accessibilityHint="Comenzar una nueva ruta de entrega"
+                >
+                  <Text style={{ 
+                    color: theme.colors.textLight, 
+                    fontWeight: "900", 
+                    fontSize: fontSizes.base 
+                  }}>Jugar de nuevo</Text>
                 </Pressable>
               </View>
             )}
@@ -225,7 +313,7 @@ export default function PuntoGo() {
             {/* Plano cartesiano */}
             <View style={styles.boardCard}>
               <LinearGradient
-                colors={["#ffffffee", "#ffffffcc"]}
+                colors={[theme.colors.surface + 'ee', theme.colors.surface + 'cc']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.boardWrap}
@@ -235,11 +323,11 @@ export default function PuntoGo() {
                   <View style={styles.axisCorner} />
                   {Array.from({ length: SIZE }).map((_, x) => (
                     <View key={`xl-${x}`} style={styles.axisCell}>
-                      <Text style={styles.axisText}>{x}</Text>
+                      <Text style={[styles.axisText, { color: theme.colors.textSecondary }]}>{x}</Text>
                     </View>
                   ))}
                   {/* Flecha eje X */}
-                  <Text style={styles.axisArrowX}>→ X</Text>
+                  <Text style={[styles.axisArrowX, { color: theme.colors.textSecondary }]}>→ X</Text>
                 </View>
 
                 <View style={styles.board}>
@@ -249,15 +337,18 @@ export default function PuntoGo() {
                       const y = SIZE - 1 - i;
                       return (
                         <View key={`yl-${y}`} style={styles.axisCellY}>
-                          <Text style={styles.axisText}>{y}</Text>
+                          <Text style={[styles.axisText, { color: theme.colors.textSecondary }]}>{y}</Text>
                         </View>
                       );
                     })}
-                    <Text style={styles.axisArrowY}>↑ Y</Text>
+                    <Text style={[styles.axisArrowY, { color: theme.colors.textSecondary }]}>↑ Y</Text>
                   </View>
 
                   {/* Grid */}
-                  <View style={styles.grid}>
+                  <View style={[styles.grid, { 
+                    borderColor: theme.colors.textMuted, 
+                    backgroundColor: theme.colors.surface 
+                  }]}>
                     {Array.from({ length: SIZE }).map((_, row) => (
                       <View key={`row-${row}`} style={styles.row}>
                         {Array.from({ length: SIZE }).map((__, col) => {
@@ -284,15 +375,23 @@ export default function PuntoGo() {
                               onPress={() => onPick(row, col)}
                               style={[
                                 styles.cell,
-                                revealedCell && styles.cellCorrect,
-                                picked && !revealedCell && styles.cellPicked,
-                                guideSoft && styles.cellGuide,
-                                guideStrong && styles.cellGuideStrong,
-                                coord.x === 0 && coord.y === 0 && styles.originCell,
+                                { 
+                                  backgroundColor: theme.colors.surface, 
+                                  borderColor: theme.colors.textMuted 
+                                },
+                                revealedCell && { backgroundColor: theme.colors.success },
+                                picked && !revealedCell && { backgroundColor: theme.colors.warning },
+                                guideSoft && { backgroundColor: theme.colors.info + '40' },
+                                guideStrong && { backgroundColor: theme.colors.info },
+                                coord.x === 0 && coord.y === 0 && { backgroundColor: theme.colors.primary + '60' },
                               ]}
-                              accessibilityLabel={`Celda ${row},${col}`}
+                              accessible={true}
+                              accessibilityLabel={`Coordenada ${coord.x}, ${coord.y}${coord.x === 0 && coord.y === 0 ? ', origen' : ''}${revealedCell ? ', paquete entregado aquí' : ''}${isTarget && round < ROUNDS_TOTAL ? ', objetivo actual' : ''}`}
+                              accessibilityHint={round < ROUNDS_TOTAL ? "Toca para entregar el paquete en esta coordenada" : "Juego terminado"}
                             >
-                              {isTarget && round < ROUNDS_TOTAL ? <View style={styles.dotHint} /> : null}
+                              {isTarget && round < ROUNDS_TOTAL ? 
+                                <View style={[styles.dotHint, { backgroundColor: theme.colors.info }]} /> 
+                                : null}
                             </Pressable>
                           );
                         })}
@@ -305,7 +404,10 @@ export default function PuntoGo() {
 
             {/* Nota de ayuda */}
             {round < ROUNDS_TOTAL ? (
-              <Text style={styles.hint}>
+              <Text style={[styles.hint, { 
+                color: theme.colors.textSecondary, 
+                fontSize: fontSizes.caption 
+              }]}>
                 Consejo: empieza en (0,0), avanza en X hacia la derecha y sube en Y. Usa 💡 si te pierdes (resta puntos).
               </Text>
             ) : null}
@@ -330,17 +432,17 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     paddingHorizontal: 4,
   },
-  badgeInfo: { fontWeight: "800", color: "#3a0070" },
-  badgeScore: { fontWeight: "900", color: "#0b4d1d" },
+  badgeInfo: { fontWeight: "800" },
+  badgeScore: { fontWeight: "900" },
 
   targetBox: {
     alignItems: "center",
     marginBottom: 8,
     gap: 6,
   },
-  story: { color: "#444", fontWeight: "600", textAlign: "center" },
-  targetValue: { fontSize: 22, fontWeight: "900", color: "#1a1a1a" },
-  subhint: { color: "#555", fontWeight: "600" },
+  story: { fontWeight: "600", textAlign: "center" },
+  targetValue: { fontWeight: "900" },
+  subhint: { fontWeight: "600" },
 
   actions: {
     flexDirection: "row",
@@ -349,25 +451,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   btn: {
-    paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: "#ffd166",
+    paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12,
   },
   btnPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
-  btnText: { color: "#3a0070", fontWeight: "900" },
+  btnText: { fontWeight: "900" },
   btnDisabled: { opacity: 0.5 },
 
   btnGhost: {
     paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12,
-    borderWidth: 2, borderColor: "#3a0070", backgroundColor: "rgba(58,0,112,0.06)",
+    borderWidth: 2, backgroundColor: "rgba(58,0,112,0.06)",
   },
   btnGhostPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
-  btnGhostText: { color: "#3a0070", fontWeight: "900" },
+  btnGhostText: { fontWeight: "900" },
 
   endBox: { alignItems: "center", gap: 8, marginBottom: 10, marginTop: 6 },
-  endTitle: { fontSize: 22, fontWeight: "900", color: "#3a0070" },
-  endSub: { color: "#444", fontWeight: "700" },
+  endTitle: { fontWeight: "900" },
+  endSub: { fontWeight: "700" },
   resetBtn: {
     marginTop: 6,
-    backgroundColor: "#4CAF50",
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 12,
@@ -396,17 +497,15 @@ const styles = StyleSheet.create({
   axisCorner: { width: 18 },
   axisCell: { width: CELL, alignItems: "center", justifyContent: "center" },
   axisCellY: { height: CELL, alignItems: "center", justifyContent: "center" },
-  axisText: { fontWeight: "800", color: "#333" },
-  axisArrowX: { marginLeft: 6, fontWeight: "800", color: "#333" },
+  axisText: { fontWeight: "800" },
+  axisArrowX: { marginLeft: 6, fontWeight: "800" },
 
   board: { flexDirection: "row" },
   axisCol: { width: CELL - 16, marginRight: 4, alignItems: "center" },
-  axisArrowY: { marginTop: 4, fontWeight: "800", color: "#333" },
+  axisArrowY: { marginTop: 4, fontWeight: "800" },
 
   grid: {
     borderWidth: 1,
-    borderColor: "#c9c9c9",
-    backgroundColor: "#f9f9f9",
   },
   row: { flexDirection: "row" },
 
@@ -416,22 +515,15 @@ const styles = StyleSheet.create({
     height: CELL,
     borderRightWidth: 1,
     borderBottomWidth: 1,
-    borderColor: "#e0e0e0",
     alignItems: "center",
     justifyContent: "center",
   },
-  cellPicked: { backgroundColor: "#ffe0e0" },
-  cellCorrect: { backgroundColor: "#b8f5c1" },
-  cellGuide: { backgroundColor: "#eef7ff" },           // guía suave (misma fila o columna)
-  cellGuideStrong: { backgroundColor: "#cfe9ff" },     // guía fuerte si usó pista
-  originCell: { borderWidth: 2, borderColor: "#3a0070" },
 
-  dotHint: { width: 6, height: 6, borderRadius: 3, backgroundColor: "#9ad0ff" },
+  dotHint: { width: 6, height: 6, borderRadius: 3 },
 
   hint: {
     textAlign: "center",
     marginTop: 10,
-    color: "#444",
     fontWeight: "600",
   },
 });

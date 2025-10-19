@@ -6,10 +6,12 @@ export type FontSize = 'small' | 'normal' | 'large';
 interface AccessibilityContextType {
   highContrast: boolean;
   colorBlindMode: boolean;
+  darkMode: boolean;
   fontSize: FontSize;
   screenReaderEnabled: boolean;
   setHighContrast: (value: boolean) => void;
   setColorBlindMode: (value: boolean) => void;
+  setDarkMode: (value: boolean) => void;
   setFontSize: (size: FontSize) => void;
   setScreenReaderEnabled: (value: boolean) => void;
   speakText: (text: string, options?: { priority?: 'high' | 'normal'; interrupt?: boolean }) => void;
@@ -32,6 +34,7 @@ interface AccessibilityProviderProps {
 export function AccessibilityProvider({ children }: AccessibilityProviderProps) {
   const [highContrast, setHighContrast] = useState(false);
   const [colorBlindMode, setColorBlindMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const [fontSize, setFontSize] = useState<FontSize>('normal');
   const [screenReaderEnabled, setScreenReaderEnabled] = useState(false);
 
@@ -86,10 +89,12 @@ export function AccessibilityProvider({ children }: AccessibilityProviderProps) 
       value={{
         highContrast,
         colorBlindMode,
+        darkMode,
         fontSize,
         screenReaderEnabled,
         setHighContrast,
         setColorBlindMode,
+        setDarkMode,
         setFontSize,
         setScreenReaderEnabled,
         speakText,

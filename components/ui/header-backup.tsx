@@ -83,6 +83,10 @@ export default function Header({
 
     try {
       setLoading(true);
+      
+      // Aquí puedes agregar la lógica para actualizar el nombre
+      // cuando configures Firebase o tu backend
+      
       Alert.alert('✅ Éxito', 'Tu nombre ha sido actualizado correctamente');
       setShowChangeNameModal(false);
       setNewName('');
@@ -95,6 +99,7 @@ export default function Header({
   };
 
   const handleChangePassword = async () => {
+    // Validaciones
     if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert('Error', 'Por favor completa todos los campos');
       return;
@@ -112,6 +117,10 @@ export default function Header({
 
     try {
       setLoading(true);
+      
+      // Aquí puedes agregar la lógica para cambiar la contraseña
+      // cuando configures Firebase o tu backend
+      
       Alert.alert('✅ Éxito', 'Tu contraseña ha sido actualizada correctamente');
       setShowChangePasswordModal(false);
       setCurrentPassword('');
@@ -139,6 +148,8 @@ export default function Header({
           style: 'destructive',
           onPress: async () => {
             try {
+              // Aquí puedes agregar la lógica de logout
+              // cuando configures Firebase o tu backend
               setShowUserMenu(false);
               router.replace('/ingreso');
             } catch (error) {
@@ -164,9 +175,7 @@ export default function Header({
         ? 'rgba(0, 0, 0, 0.8)' 
         : colorBlindMode 
           ? 'rgba(0, 119, 190, 0.3)' // Azul distintivo
-          : darkMode
-            ? 'rgba(28, 28, 46, 0.3)'
-            : 'rgba(0, 0, 0, 0.1)',
+          : 'rgba(0, 0, 0, 0.1)',
       borderBottomWidth: (highContrast || colorBlindMode) ? 2 : 0,
       borderBottomColor: colorBlindMode ? theme.colors.primary : theme.colors.border,
     },
@@ -543,6 +552,19 @@ export default function Header({
 }
 
 const styles = StyleSheet.create({
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
   rightButtons: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -594,6 +616,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  // Nuevos estilos para modales de cambio
   modalButtons: {
     flexDirection: 'row',
     gap: 10,

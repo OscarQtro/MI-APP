@@ -5,6 +5,7 @@ export function useThemedStyles() {
   const { 
     highContrast, 
     colorBlindMode, 
+    darkMode,
     fontSize, 
     screenReaderEnabled,
     getFontSize, 
@@ -12,7 +13,7 @@ export function useThemedStyles() {
     speakNavigation, 
     speakAction 
   } = useAccessibility();
-  const theme = getTheme(highContrast, colorBlindMode);
+  const theme = getTheme(highContrast, colorBlindMode, darkMode);
   const fontSizes = getFontSize();
 
   return {
@@ -21,6 +22,7 @@ export function useThemedStyles() {
     fontSize,
     highContrast,
     colorBlindMode,
+    darkMode,
     screenReaderEnabled,
     speakText,
     speakNavigation,

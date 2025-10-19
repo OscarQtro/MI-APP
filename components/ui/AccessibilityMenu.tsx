@@ -19,10 +19,12 @@ export default function AccessibilityMenu({ visible, onClose }: AccessibilityMen
   const {
     highContrast,
     colorBlindMode,
+    darkMode,
     fontSize,
     screenReaderEnabled,
     setHighContrast,
     setColorBlindMode,
+    setDarkMode,
     setFontSize,
     setScreenReaderEnabled,
     speakText,
@@ -49,8 +51,20 @@ export default function AccessibilityMenu({ visible, onClose }: AccessibilityMen
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, { minHeight: 400 }]}>
-          <Text style={[styles.modalTitle, { fontSize: fontSizes.title }]}>
+        <View style={[
+          styles.modalContent, 
+          { 
+            minHeight: 450,
+            backgroundColor: darkMode ? '#1C1C2E' : 'white'
+          }
+        ]}>
+          <Text style={[
+            styles.modalTitle, 
+            { 
+              fontSize: fontSizes.title,
+              color: darkMode ? 'white' : '#333'
+            }
+          ]}>
             Opciones de Accesibilidad
           </Text>
           
@@ -100,6 +114,29 @@ export default function AccessibilityMenu({ visible, onClose }: AccessibilityMen
             />
           </TouchableOpacity>
 
+          {/* Modo oscuro */}
+          <TouchableOpacity
+            style={[styles.accessibilityOption, darkMode && styles.selectedOption]}
+            onPress={() => {
+              setDarkMode(!darkMode);
+              speakText(darkMode ? "Modo oscuro desactivado" : "Modo oscuro activado");
+            }}
+            accessibilityLabel={`Modo oscuro: ${darkMode ? 'Activado' : 'Desactivado'}`}
+            accessibilityHint="Cambia a colores oscuros para reducir el brillo de la pantalla"
+            accessibilityRole="switch"
+            accessibilityState={{ checked: darkMode }}
+          >
+            <Ionicons name={darkMode ? "moon" : "sunny"} size={24} color={darkMode ? "white" : "#333"} />
+            <Text style={[styles.accessibilityOptionText, { color: darkMode ? "white" : "#333" }]}>
+              Modo Oscuro
+            </Text>
+            <Ionicons 
+              name={darkMode ? "checkmark-circle" : "ellipse-outline"} 
+              size={24} 
+              color={darkMode ? "white" : "#333"} 
+            />
+          </TouchableOpacity>
+
           {/* Lector de pantalla */}
           <TouchableOpacity
             style={[styles.accessibilityOption, screenReaderEnabled && styles.selectedOption]}
@@ -130,7 +167,13 @@ export default function AccessibilityMenu({ visible, onClose }: AccessibilityMen
 
           {/* Tamaño de fuente */}
           <View style={styles.fontSizeContainer}>
-            <Text style={[styles.accessibilityLabel, { fontSize: fontSizes.base }]}>
+            <Text style={[
+              styles.accessibilityLabel, 
+              { 
+                fontSize: fontSizes.base,
+                color: darkMode ? 'white' : '#333'
+              }
+            ]}>
               Tamaño de Texto:
             </Text>
             <View style={styles.fontSizeButtons}>
@@ -139,7 +182,8 @@ export default function AccessibilityMenu({ visible, onClose }: AccessibilityMen
                   key={size}
                   style={[
                     styles.fontSizeButton, 
-                    fontSize === size && styles.selectedFontButton
+                    fontSize === size && styles.selectedFontButton,
+                    { backgroundColor: darkMode ? '#3A3A4A' : '#e0e0e0' }
                   ]}
                   onPress={() => {
                     setFontSize(size);
@@ -152,7 +196,10 @@ export default function AccessibilityMenu({ visible, onClose }: AccessibilityMen
                   <Text style={[
                     styles.fontSizeButtonText, 
                     fontSize === size && styles.selectedFontButtonText,
-                    { fontSize: size === 'small' ? 12 : size === 'large' ? 20 : 16 }
+                    { 
+                      fontSize: size === 'small' ? 12 : size === 'large' ? 20 : 16,
+                      color: fontSize === size ? 'white' : (darkMode ? 'white' : '#333')
+                    }
                   ]}>
                     A
                   </Text>
@@ -179,7 +226,10 @@ export default function AccessibilityMenu({ visible, onClose }: AccessibilityMen
           )}
 
           <TouchableOpacity
-            style={styles.cancelButton}
+            style={[
+              styles.cancelButton,
+              { backgroundColor: darkMode ? '#3A3A4A' : '#ccc' }
+            ]}
             onPress={() => {
               onClose();
               speakText("Menú de accesibilidad cerrado");
@@ -187,7 +237,10 @@ export default function AccessibilityMenu({ visible, onClose }: AccessibilityMen
             accessibilityLabel="Cerrar menú de accesibilidad"
             accessibilityRole="button"
           >
-            <Text style={styles.cancelButtonText}>Cerrar</Text>
+            <Text style={[
+              styles.cancelButtonText,
+              { color: darkMode ? 'white' : '#666' }
+            ]}>Cerrar</Text>
           </TouchableOpacity>
         </View>
       </View>

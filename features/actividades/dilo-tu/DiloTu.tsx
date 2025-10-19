@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import ActivityLayout from "../common/ActivityLayout";
 import * as Speech from "expo-speech";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 
 /**
  * ¡DiloTú!
@@ -39,6 +40,7 @@ function pickUnique(count: number, from: readonly string[], except?: string): st
 }
 
 export default function DiloTu() {
+  const { theme, fontSizes, screenReaderEnabled, speakText, speakAction } = useThemedStyles();
   const [round, setRound] = useState(0);
   const [hits, setHits] = useState(0);
   const [current, setCurrent] = useState<Word | null>(null);
@@ -78,7 +80,11 @@ export default function DiloTu() {
     setPicked(null);
     setDisabled(false);
     announcedRef.current = false;
-  }, [round]);
+    
+    if (screenReaderEnabled && round > 0) {
+      speakAction(`Ronda ${round + 1}`, `Nueva ronda iniciada. Escucha la palabra y elige la opción correcta.`);
+    }
+  }, [round, screenReaderEnabled, speakAction]);
 
   // Pronunciar al iniciar ronda
   useEffect(() => {
@@ -103,6 +109,11 @@ export default function DiloTu() {
     const correct = option === current;
     setDisabled(true);
 
+    if (screenReaderEnabled) {
+      const result = correct ? "¡Correcto!" : "Incorrecto";
+      speakAction(result, `Seleccionaste ${option}. La palabra correcta era ${current}.`);
+    }
+
     setTimeout(() => {
       const nextRound = round + 1;
       const nextHits = correct ? hits + 1 : hits;
@@ -117,7 +128,12 @@ export default function DiloTu() {
   }
 
   function onRepeat() {
-    if (current) speak(current);
+    if (current) {
+      speak(current);
+      if (screenReaderEnabled) {
+        speakAction("Repitiendo palabra", `Escucha la palabra: ${current}`);
+      }
+    }
   }
 
   function resetSession() {
@@ -126,13 +142,16 @@ export default function DiloTu() {
     setPicked(null);
     setDisabled(false);
     persist(0, 0);
+    if (screenReaderEnabled) {
+      speakAction("Juego reiniciado", "Nueva partida iniciada");
+    }
   }
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       {/* Fondo degradado global */}
       <LinearGradient
-        colors={["#00B4D8", "#FFEB85"]}
+        colors={[theme.colors.gradTop, theme.colors.gradBottom]}
                 start={{ x: 0.5, y: 0 }}
                 end={{ x: 0.5, y: 1 }}
                 style={StyleSheet.absoluteFill}
@@ -144,10 +163,22 @@ export default function DiloTu() {
             {round < ROUNDS_TOTAL ? (
               <>
                 <View style={styles.headerRow}>
-                  <Pressable onPress={onRepeat} style={({ pressed }) => [styles.speakBtn, pressed && { opacity: 0.9 }]}>
-                    <Text style={styles.speakText}>🔊 Escuchar de nuevo</Text>
+                  <Pressable 
+                    onPress={onRepeat} 
+                    style={({ pressed }) => [
+                      styles.speakBtn, 
+                      { backgroundColor: theme.colors.primary },
+                      pressed && { opacity: 0.9 }
+                    ]}
+                    accessible={true}
+                    accessibilityLabel="Escuchar palabra de nuevo"
+                    accessibilityHint="Toca para repetir el audio de la palabra actual"
+                  >
+                    <Text style={[styles.speakText, { color: theme.colors.textLight, fontSize: fontSizes.base }]}>🔊 Escuchar de nuevo</Text>
                   </Pressable>
-                  <Text style={styles.roundText}>Ronda {round + 1} / {ROUNDS_TOTAL}</Text>
+                  <Text style={[styles.roundText, { color: theme.colors.textPrimary, fontSize: fontSizes.base }]}>
+                    Ronda {round + 1} / {ROUNDS_TOTAL}
+                  </Text>
                 </View>
 
                 <View style={styles.optionsGrid}>
@@ -156,17 +187,10 @@ export default function DiloTu() {
                     const isCorrect = picked && opt === current;
                     const isWrong = picked && opt === picked && opt !== current;
 
-                    // Estado visual por opción
-                    const base = (
-                      <LinearGradient
-                        colors={["#ff92c2", "#ffb3da"]} // degradado por defecto
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.optionGrad}
-                      >
-                        <Text style={styles.optionText}>{opt}</Text>
-                      </LinearGradient>
-                    );
+                    // Colores dinámicos basados en el tema
+                    let gradientColors: [string, string] = [theme.colors.primary, theme.colors.secondary];
+                    if (isCorrect) gradientColors = [theme.colors.success, theme.colors.success];
+                    if (isWrong) gradientColors = [theme.colors.danger, theme.colors.danger];
 
                     return (
                       <Pressable
@@ -175,32 +199,57 @@ export default function DiloTu() {
                         disabled={disabled}
                         style={({ pressed }) => [
                           styles.option,
+                          { backgroundColor: theme.colors.surface },
                           pressed && { transform: [{ scale: 0.97 }] },
                           isPicked && styles.optionPicked,
                           disabled && isCorrect && styles.optionCorrect,
                           disabled && isWrong && styles.optionWrong,
                         ]}
+                        accessible={true}
                         accessibilityLabel={`Opción ${opt}`}
+                        accessibilityHint={disabled ? 
+                          (isCorrect ? "Opción correcta seleccionada" : isWrong ? "Opción incorrecta seleccionada" : "") : 
+                          "Toca para seleccionar esta opción"
+                        }
                       >
-                        {/* Si hay evaluación, usamos color sólido; si no, mantenemos degradado */}
-                        {disabled ? (
-                          <View style={styles.optionGrad}>{/* mantiene layout */}<Text style={styles.optionText}>{opt}</Text></View>
-                        ) : base}
+                        <LinearGradient
+                          colors={gradientColors}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.optionGrad}
+                        >
+                          <Text style={[styles.optionText, { fontSize: fontSizes.base }]}>{opt}</Text>
+                        </LinearGradient>
                       </Pressable>
                     );
                   })}
                 </View>
 
-                <Text style={styles.hint}>
+                <Text 
+                  style={[styles.hint, { color: theme.colors.textSecondary, fontSize: fontSizes.caption }]}
+                  accessible={true}
+                  accessibilityLabel="Instrucciones: toca el botón de escuchar para oír la palabra, luego elige la opción correcta"
+                >
                   Toca 🔊 para oír la palabra. Luego elige la opción correcta.
                 </Text>
               </>
             ) : (
-              <View style={styles.endBox}>
-                <Text style={styles.endTitle}>¡Muy bien!</Text>
-                <Text style={styles.endSub}>Aciertos: {hits} / {ROUNDS_TOTAL}</Text>
-                <Pressable onPress={resetSession} style={({ pressed }) => [styles.resetBtn, pressed && { opacity: 0.9 }]}>
-                  <Text style={{ color: "#fff", fontWeight: "900" }}>Reiniciar</Text>
+              <View style={[styles.endBox, { backgroundColor: theme.colors.surface }]}>
+                <Text style={[styles.endTitle, { color: theme.colors.textPrimary, fontSize: fontSizes.title }]}>¡Muy bien!</Text>
+                <Text style={[styles.endSub, { color: theme.colors.textSecondary, fontSize: fontSizes.base }]}>
+                  Aciertos: {hits} / {ROUNDS_TOTAL}
+                </Text>
+                <Pressable 
+                  onPress={resetSession} 
+                  style={({ pressed }) => [
+                    styles.resetBtn, 
+                    { backgroundColor: theme.colors.success },
+                    pressed && { opacity: 0.9 }
+                  ]}
+                  accessible={true}
+                  accessibilityLabel="Reiniciar juego completo"
+                >
+                  <Text style={[{ color: theme.colors.textLight, fontWeight: "900", fontSize: fontSizes.base }]}>Reiniciar</Text>
                 </Pressable>
               </View>
             )}

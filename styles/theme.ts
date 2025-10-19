@@ -77,8 +77,36 @@ export const colorBlindTheme = {
   },
 };
 
-export const getTheme = (highContrast: boolean, colorBlindMode: boolean) => {
+export const darkTheme = {
+  colors: {
+    // Colores optimizados para modo oscuro
+    gradTop: '#1A1A2E', // Azul oscuro profundo
+    gradBottom: '#16213E', // Azul noche
+    primary: '#0F4C75', // Azul principal oscuro
+    secondary: '#3282B8', // Azul secundario
+    background: '#0E1217', // Negro azulado
+    surface: '#1C1C2E', // Superficie elevada
+    textPrimary: '#FFFFFF', // Texto principal blanco
+    textSecondary: '#E0E0E0', // Texto secundario gris claro
+    textLight: '#FFFFFF', // Texto claro
+    textMuted: '#A0A0A0', // Texto apagado
+    trunk: '#8B7355', // Tronco en tono tierra
+    leaf1: '#4A7C59', // Hoja verde oscuro
+    leaf2: '#2D5A3D', // Hoja verde más oscuro
+    glow: 'rgba(255,255,255,0.15)', // Brillo sutil
+    border: '#3A3A4A', // Bordes visibles
+    shadow: 'rgba(0,0,0,0.6)', // Sombras más intensas
+    // Estados para modo oscuro
+    success: '#4CAF50', // Verde éxito
+    warning: '#FF9800', // Naranja advertencia
+    danger: '#F44336', // Rojo peligro
+    info: '#2196F3', // Azul información
+  },
+};
+
+export const getTheme = (highContrast: boolean, colorBlindMode: boolean, darkMode: boolean) => {
   if (highContrast) return highContrastTheme;
   if (colorBlindMode) return colorBlindTheme;
+  if (darkMode) return darkTheme;
   return normalTheme;
 };

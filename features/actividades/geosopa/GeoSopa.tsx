@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import ActivityLayout from "../common/ActivityLayout";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useThemedStyles } from "../../../hooks/useThemedStyles";
 
 // ==== Tipos ====
 type Pos = { r: number; c: number };
@@ -186,6 +187,7 @@ function buildRandomBoard(): { g: string[][]; W: Word[] } {
 
 // ==== Componente principal ====
 export default function GeoSopa() {
+  const { theme, fontSizes, screenReaderEnabled, speakText, speakAction } = useThemedStyles();
   const [grid, setGrid] = useState<string[][]>(() => emptyGrid());
   const [words, setWords] = useState<Word[]>([]);
   const [startSel, setStartSel] = useState<Pos | null>(null);
@@ -219,6 +221,15 @@ export default function GeoSopa() {
     })();
   }, []);
 
+  // Announce game instructions when screen reader is enabled
+  useEffect(() => {
+    if (screenReaderEnabled && words.length > 0) {
+      setTimeout(() => {
+        speakText(`Juego de sopa de letras. Busca ${words.length} palabras en la cuadrícula. Toca una letra para iniciar la selección y otra para terminar. Las palabras pueden estar en cualquier dirección.`);
+      }, 1000);
+    }
+  }, [screenReaderEnabled, words.length]);
+
   // Progreso
   const total = words.length;
   const foundCount = words.filter(w => w.found).length;
@@ -249,6 +260,9 @@ export default function GeoSopa() {
 
     if (!path || path.length < 2) {
       setStartSel(null);
+      if (screenReaderEnabled) {
+        speakText("Selección no válida. Intenta seleccionar una línea de letras.");
+      }
       return;
     }
 
@@ -268,8 +282,22 @@ export default function GeoSopa() {
 
       persistProgress(next);
 
+      // Screen reader feedback for found word
+      if (screenReaderEnabled) {
+        const remainingWords = next.filter(w => !w.found).length;
+        speakAction(`¡Excelente! Has encontrado la palabra ${next[idx].text}. ${remainingWords} palabras restantes.`);
+      }
+
       if (next.every((w) => w.found)) {
+        if (screenReaderEnabled) {
+          speakAction("¡Felicidades! Has completado el juego. Has encontrado todas las palabras.");
+        }
         Alert.alert("¡Excelente!", "Has encontrado todas las palabras 🎉");
+      }
+    } else {
+      // Screen reader feedback for invalid word
+      if (screenReaderEnabled) {
+        speakText("Esa no es una palabra válida. Intenta de nuevo.");
       }
     }
     setStartSel(null);
@@ -293,24 +321,43 @@ export default function GeoSopa() {
       previewPath.some((p) => p.r === r && p.c === c);
     const permanent = foundCells.split(";").includes(`${r},${c}`);
 
+    // Dynamic styling based on theme
+    let cellStyle = { backgroundColor: theme.colors.surface };
+    let textStyle = { color: theme.colors.textPrimary, fontSize: fontSizes.caption };
+    
+    if (permanent) {
+      cellStyle = { backgroundColor: theme.colors.success };
+      textStyle = { color: theme.colors.textLight, fontSize: fontSizes.caption };
+    } else if (selected) {
+      cellStyle = { backgroundColor: theme.colors.info };
+      textStyle = { color: theme.colors.textLight, fontSize: fontSizes.caption };
+    }
+
     return (
       <Pressable
         key={`${r}-${c}`}
         onPress={() => {
-          if (!startSel) setStartSel({ r, c });
-          else tryValidate({ r, c });
+          if (!startSel) {
+            setStartSel({ r, c });
+            if (screenReaderEnabled) {
+              speakText(`Iniciando selección en fila ${r + 1}, columna ${c + 1}, letra ${char}`);
+            }
+          } else {
+            tryValidate({ r, c });
+          }
         }}
         onHoverIn={() => {
           if (startSel) setHoverSel({ r, c });
         }}
         style={[
           styles.cell,
-          permanent && styles.cellFound,
-          selected && !permanent && styles.cellPreview,
+          cellStyle,
         ]}
-        accessibilityLabel={`Celda ${r},${c}`}
+        accessible={true}
+        accessibilityLabel={`Letra ${char} en fila ${r + 1}, columna ${c + 1}${permanent ? ', palabra encontrada' : ''}${selected ? ', seleccionada' : ''}`}
+        accessibilityHint={!startSel ? "Toca para iniciar selección de palabra" : "Toca para finalizar selección de palabra"}
       >
-        <Text style={[styles.cellText, permanent && styles.cellTextFound]}>
+        <Text style={[styles.cellText, textStyle]}>
           {char}
         </Text>
       </Pressable>
@@ -318,10 +365,10 @@ export default function GeoSopa() {
   }
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
       {/* Fondo degradado global */}
       <LinearGradient
-        colors={["#00B4D8", "#FFEB85"]}
+        colors={[theme.colors.gradTop, theme.colors.gradBottom]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -339,12 +386,27 @@ export default function GeoSopa() {
               {words.map((w) => (
                 <View key={w.id} style={[styles.badge, w.found && styles.badgeFound]}>
                   <LinearGradient
-                    colors={w.found ? ["#b5f5bd", "#8fe79b"] : ["#ffe7a8", "#ffd68a"]}
+                    colors={w.found ? 
+                      [theme.colors.success, theme.colors.success] : 
+                      [theme.colors.primary, theme.colors.secondary]
+                    }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={styles.badgeGrad}
                   >
-                    <Text style={[styles.badgeText, w.found && styles.badgeTextFound]}>
+                    <Text 
+                      style={[
+                        styles.badgeText, 
+                        { 
+                          color: theme.colors.textLight,
+                          fontSize: fontSizes.caption 
+                        },
+                        w.found && { color: theme.colors.textLight }
+                      ]}
+                      accessible={true}
+                      accessibilityLabel={`Palabra ${w.text}${w.found ? ', encontrada' : ', por encontrar'}`}
+                      onPress={() => screenReaderEnabled && speakText(`Palabra ${w.text}${w.found ? ', ya encontrada' : ', por encontrar'}`)}
+                    >
                       {w.text}
                     </Text>
                   </LinearGradient>
@@ -355,7 +417,7 @@ export default function GeoSopa() {
             {/* Grid */}
             <View style={styles.gridCard}>
               <LinearGradient
-                colors={["#ffffffee", "#ffffffcc"]}
+                colors={[theme.colors.surface, theme.colors.background]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.grid}
@@ -370,13 +432,26 @@ export default function GeoSopa() {
 
             {/* Acciones */}
             <View style={styles.actions}>
-              <Pressable onPress={resetAll} style={({pressed}) => [styles.btnPrimary, pressed && styles.btnPrimaryPressed]}>
-                <Text style={styles.btnPrimaryText}>↺ Reiniciar</Text>
+              <Pressable 
+                onPress={resetAll} 
+                style={({pressed}) => [
+                  styles.btnPrimary, 
+                  { backgroundColor: theme.colors.primary },
+                  pressed && styles.btnPrimaryPressed
+                ]}
+                accessible={true}
+                accessibilityLabel="Reiniciar sopa de letras con nuevas palabras"
+              >
+                <Text style={[styles.btnPrimaryText, { fontSize: fontSizes.base, color: theme.colors.textLight }]}>↺ Reiniciar</Text>
               </Pressable>
             </View>
 
             {/* Instrucciones */}
-            <Text style={styles.hint}>
+            <Text 
+              style={[styles.hint, { color: theme.colors.textSecondary, fontSize: fontSizes.caption }]}
+              accessible={true}
+              accessibilityLabel="Instrucciones: toca una letra para iniciar la selección y otra letra en la misma fila o columna para completar la palabra"
+            >
               Toca una letra para iniciar y otra en la misma fila o columna para terminar.
             </Text>
           </View>
@@ -405,8 +480,7 @@ const styles = StyleSheet.create({
   badge: { borderRadius: 999, overflow: "hidden" },
   badgeGrad: { paddingHorizontal: 12, paddingVertical: 6, justifyContent: "center", alignItems: "center" },
   badgeFound: {},
-  badgeText: { fontWeight: "900", color: "#5b4800" },
-  badgeTextFound: { color: "#0b4d1d" },
+  badgeText: { fontWeight: "900" },
 
   // Tarjeta del grid
   gridCard: {
@@ -431,25 +505,20 @@ const styles = StyleSheet.create({
     height: 32,
     margin: 2,
     borderRadius: 8,
-    backgroundColor: "#f0f2f5",
     alignItems: "center",
     justifyContent: "center",
   },
-  cellPreview: { backgroundColor: "#bfe3ff" },
-  cellFound: { backgroundColor: "#b5f5bd" },
-  cellText: { fontWeight: "900", color: "#222" },
-  cellTextFound: { color: "#0b4d1d" },
+  cellText: { fontWeight: "900" },
 
   // Acciones
   actions: { flexDirection: "row", justifyContent: "center", gap: 10, marginTop: 12, marginBottom: 6 },
   btnPrimary: {
     paddingHorizontal: 18, paddingVertical: 10, borderRadius: 12,
-    backgroundColor: "#3a0070",
-    shadowColor: "#3a0070", shadowOpacity: 0.25, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25, shadowRadius: 6, shadowOffset: { width: 0, height: 3 },
     elevation: 3,
   },
   btnPrimaryPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
-  btnPrimaryText: { color: "#fff", fontWeight: "900", letterSpacing: 0.5 },
+  btnPrimaryText: { fontWeight: "900", letterSpacing: 0.5 },
 
-  hint: { textAlign: "center", marginTop: 10, color: "#444", fontWeight: "600" },
+  hint: { textAlign: "center", marginTop: 10, fontWeight: "600" },
 });
