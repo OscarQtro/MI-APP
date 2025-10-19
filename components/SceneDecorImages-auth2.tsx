@@ -1,10 +1,33 @@
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Keyboard } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
+import { useState, useEffect } from "react";
 
 type Props = { children?: React.ReactNode };
 
 export default function SceneDecorImages({ children }: Props) {
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidHideListener?.remove();
+      keyboardDidShowListener?.remove();
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
       {/* Fondo degradado */}
@@ -15,32 +38,35 @@ export default function SceneDecorImages({ children }: Props) {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Nubes arriba (franja) */}
+      {/* Nubes arriba (franja) - fijas con opacidad cuando hay teclado */}
       <Image
         source={require("../assets/ui/CLOUDS.webp")}
-        style={styles.clouds}
+        style={[styles.clouds, { opacity: isKeyboardVisible ? 0.3 : 1 }]}
         contentFit="contain"
         transition={120}
       />
 
-      {/* Logo centrado (franja) */}
-      <Image
-        source={require("../assets/ui/LOGO.webp")}
-        style={styles.logo}
-        contentFit="contain"
-        transition={120}
-      />
-
-      {/* Árboles abajo (franja) */}
+      {/* Árboles abajo (franja) - fijos con opacidad cuando hay teclado */}
       <Image
         source={require("../assets/ui/TREE.webp")}
-        style={styles.trees}
+        style={[styles.trees, { opacity: isKeyboardVisible ? 0.3 : 1 }]}
         contentFit="cover"
         transition={120}
       />
 
-      {/* Zona central para logo + botones */}
-      <View style={styles.content}>{children}</View>
+      {/* Logo centrado (franja) - posición absoluta como antes pero con opacidad */}
+      <Image
+        source={require("../assets/ui/LOGO.webp")}
+        style={[styles.logo, { opacity: isKeyboardVisible ? 0.3 : 1 }]}
+        contentFit="contain"
+        transition={120}
+      />
+
+      {/* Contenido que se mueve con el teclado */}
+      <View style={styles.movableContent}>
+        {/* Zona central para logo + botones */}
+        <View style={styles.content}>{children}</View>
+      </View>
     </View>
   );
 }
@@ -54,13 +80,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: 220, // ajusta según tu imagen
   },
-    logo: {
-    position: "absolute",
-    top: 200,
-    left: 0,
-    right: 0,
-    height: 120, // ajusta según tu imagen
-  },
   trees: {
     position: "absolute",
     bottom: 0,
@@ -68,12 +87,22 @@ const styles = StyleSheet.create({
     right: 0,
     height: 210, // ajusta según tu imagen
   },
+  logo: {
+    position: "absolute",
+    top: 200,
+    left: 0,
+    right: 0,
+    height: 120, // ajusta según tu imagen
+  },
+  movableContent: {
+    flex: 1,
+  },
   content: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingTop: 290, // deja aire sobre el logo
+    paddingTop: 290, // Como estaba originalmente
     paddingHorizontal: 24,
-    paddingBottom: 0, // deja aire sobre árboles
+    paddingBottom: 0,
   },
 });

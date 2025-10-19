@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
@@ -37,68 +38,71 @@ export default function Ingreso() {
   };
 
   return (
-    <SceneDecorImages>
-      <StatusBar style="light" />
+    <KeyboardAvoidingView
+      behavior="padding"
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : -100}
+    >
+      <SceneDecorImages>
+        <StatusBar style="light" />
 
-      {/* Logo arriba */}
+        {/* Logo arriba */}
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={a.form}
-      >
-        <Text style={a.title}>INGRESAR</Text>
+        <View style={a.form}>
+          <Text style={a.title}>INGRESAR</Text>
 
-        {/* Correo */}
-        <View style={a.group}>
-          <Text style={a.label}>CORREO</Text>
-          <TextInput
-            style={a.inputPill}
-            placeholder="Correo Electrónico"
-            placeholderTextColor="rgba(255,255,255,0.9)"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            value={email}
-            onChangeText={setEmail}
-            textContentType="emailAddress"
-          />
-        </View>
-
-        {/* Contraseña */}
-        <View style={a.group}>
-          <Text style={a.label}>CONTRASEÑA</Text>
-          <View style={a.passwordRow}>
+          {/* Correo */}
+          <View style={a.group}>
+            <Text style={a.label}>CORREO</Text>
             <TextInput
-              style={[a.inputPill, { flex: 1 }]}
-              placeholder="Contraseña"
+              style={a.inputPill}
+              placeholder="Correo Electrónico"
               placeholderTextColor="rgba(255,255,255,0.9)"
-              secureTextEntry={!show}
-              value={pass}
-              onChangeText={setPass}
+              keyboardType="email-address"
               autoCapitalize="none"
-              textContentType="password"
+              autoCorrect={false}
+              value={email}
+              onChangeText={setEmail}
+              textContentType="emailAddress"
             />
-            <Pressable onPress={() => setShow(v => !v)} style={a.showBtn}>
-              <Text style={a.showText}>{show ? "Ocultar" : "Mostrar"}</Text>
-            </Pressable>
           </View>
+
+          {/* Contraseña */}
+          <View style={a.group}>
+            <Text style={a.label}>CONTRASEÑA</Text>
+            <View style={a.passwordRow}>
+              <TextInput
+                style={[a.inputPill, { flex: 1 }]}
+                placeholder="Contraseña"
+                placeholderTextColor="rgba(255,255,255,0.9)"
+                secureTextEntry={!show}
+                value={pass}
+                onChangeText={setPass}
+                autoCapitalize="none"
+                textContentType="password"
+              />
+              <Pressable onPress={() => setShow(v => !v)} style={a.showBtn}>
+                <Text style={a.showText}>{show ? "Ocultar" : "Mostrar"}</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Botón principal */}
+          <Pressable
+            style={[a.primaryBtn, loading && a.disabled]}
+            disabled={loading}
+            onPress={onSubmit}
+          >
+            <Text style={a.primaryText}>{loading ? "Ingresando..." : "INGRESAR"}</Text>
+          </Pressable>
+
+          {/* Enlaces */}
+          <Pressable style={a.linkBtn} onPress={() => router.back()}>
+            <Text style={a.linkText}>← Volver</Text>
+          </Pressable>
         </View>
-
-        {/* Botón principal */}
-        <Pressable
-          style={[a.primaryBtn, loading && a.disabled]}
-          disabled={loading}
-          onPress={onSubmit}
-        >
-          <Text style={a.primaryText}>{loading ? "Ingresando..." : "INGRESAR"}</Text>
-        </Pressable>
-
-        {/* Enlaces */}
-        <Pressable style={a.linkBtn} onPress={() => router.back()}>
-          <Text style={a.linkText}>← Volver</Text>
-        </Pressable>
-      </KeyboardAvoidingView>
-    </SceneDecorImages>
+      </SceneDecorImages>
+    </KeyboardAvoidingView>
   );
 }
 

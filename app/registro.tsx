@@ -43,14 +43,16 @@ export default function Registro() {
   };
 
   return (
-    <SceneDecorImages>
-      <StatusBar style="light" />
+    <KeyboardAvoidingView
+      behavior="padding"
+      style={{ flex: 1 }}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : -100}
+    >
+      <SceneDecorImages>
+        <StatusBar style="light" />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={a.form}
-      >
-        <Text style={a.title}>REGISTRO</Text>
+        <View style={a.form}>
+          <Text style={a.title}>REGISTRO</Text>
 
         {/* Nombre */}
         <View style={a.group}>
@@ -133,7 +135,8 @@ export default function Registro() {
         <Pressable style={a.linkBtn} onPress={() => router.back()}>
           <Text style={a.linkText}>← Volver</Text>
         </Pressable>
-      </KeyboardAvoidingView>
-    </SceneDecorImages>
+        </View>
+      </SceneDecorImages>
+    </KeyboardAvoidingView>
   );
 }
