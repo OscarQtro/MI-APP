@@ -14,6 +14,9 @@ import { router } from "expo-router";
 import SceneDecorImages from "../components/SceneDecorImages-auth2"; // mismo decorado que usas en ingreso
 import { authStyles as a } from "../styles/auth.styles";
 import { useThemedStyles } from "../hooks/useThemedStyles";
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../config/firebase';
+import { createUser } from '../services/database';
 
 const isEmail = (v: string) => /\S+@\S+\.\S+/.test(v);
 const ROLES = ["Alumno", "Profesor"] as const;
@@ -60,17 +63,48 @@ export default function Registro() {
       if (screenReaderEnabled) {
         speakAction("Creando cuenta", "Registrando nueva cuenta, por favor espera.");
       }
-      // TODO: llamada real a tu backend /auth/register  { name, email, pass, rol }
+      
+      // Crear usuario en Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      const user = userCredential.user;
+      
+      // Crear perfil del usuario en Firestore
+      await createUser(user.uid, {
+        email: email,
+        name: name,
+        createdAt: new Date(),
+        progress: 0,
+        completedActivities: 0,
+        totalActivities: 4
+      });
+      
       if (screenReaderEnabled) {
         speakAction("Registro exitoso", "Cuenta creada correctamente. Dirigiendo a la pantalla de ingreso.");
       }
-      Alert.alert("Registro correcto", "Ahora inicia sesión.");
-      router.replace("/ingreso"); // ← ir a Ingresar
-    } catch {
-      if (screenReaderEnabled) {
-        speakAction("Error de registro", "No se pudo registrar. Intenta nuevamente.");
+      Alert.alert("Registro correcto", "Ahora inicia sesión.", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/ingreso")
+        }
+      ]);
+    } catch (error: any) {
+      console.error('Error en registro:', error);
+      
+      let errorMessage = "El usuario no se pudo crear";
+      
+      // Manejar errores específicos de Firebase
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "Este correo ya está registrado";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "La contraseña es muy débil";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "El formato del correo es inválido";
       }
-      Alert.alert("Error", "No se pudo registrar.");
+      
+      if (screenReaderEnabled) {
+        speakAction("Error de registro", errorMessage);
+      }
+      Alert.alert("Error de registro", errorMessage);
     } finally {
       setLoading(false);
     }
