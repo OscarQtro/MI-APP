@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import SceneDecorImages from "../components/SceneDecorImages-auth";
 import { authStyles as a } from "../styles/auth.styles";
 import { useThemedStyles } from "../hooks/useThemedStyles";
+import { loginConValidacion } from "../login-validacion-estricta";
 
 const isEmail = (v: string) => /\S+@\S+\.\S+/.test(v);
 
@@ -49,17 +50,36 @@ export default function Ingreso() {
       if (screenReaderEnabled) {
         speakAction("Iniciando sesión", "Validando credenciales, por favor espera.");
       }
-      // TODO: llamada real a tu backend /auth/login
-      if (screenReaderEnabled) {
-        speakAction("Ingreso exitoso", "Bienvenido a la aplicación.");
+      
+      // Llamada real a Firebase para validar credenciales
+      const resultado = await loginConValidacion(email, pass);
+      
+      if (resultado.success) {
+        if (screenReaderEnabled) {
+          speakAction("Ingreso exitoso", "Bienvenido a la aplicación.");
+        }
+        Alert.alert("Ingreso correcto", "¡Bienvenido!", [
+          {
+            text: "OK",
+            onPress: () => router.replace("/alumno")
+          }
+        ]);
+      } else {
+        // Login falló - mostrar mensaje específico
+        if (screenReaderEnabled) {
+          speakAction("Error de credenciales", "Usuario o contraseña incorrectas");
+        }
+        Alert.alert(
+          "Error de ingreso", 
+          "Usuario o contraseña incorrectas"
+        );
       }
-      Alert.alert("Ingreso correcto", "¡Bienvenido!");
-      // router.replace("/inicio2");
-    } catch {
+    } catch (error) {
+      console.error('Error en login:', error);
       if (screenReaderEnabled) {
-        speakAction("Error de conexión", "No se pudo iniciar sesión. Intenta nuevamente.");
+        speakAction("Error de conexión", "No se pudo conectar con el servidor. Intenta nuevamente.");
       }
-      Alert.alert("Error", "No se pudo iniciar sesión.");
+      Alert.alert("Error de conexión", "No se pudo conectar con el servidor. Verifica tu conexión a internet.");
     } finally {
       setLoading(false);
     }
