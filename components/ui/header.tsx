@@ -7,61 +7,38 @@ import { useAccessibility } from '../../contexts/AccessibilityContext';
 
 interface HeaderProps {
   title: string;
-  showLanguageToggle?: boolean;
   showProfile?: boolean;
 }
 
 export default function Header({ 
   title, 
-  showLanguageToggle = true, 
   showProfile = true 
 }: HeaderProps) {
   const { theme, fontSizes, highContrast, colorBlindMode, darkMode, screenReaderEnabled, speakAction } = useThemedStyles();
   const { setDarkMode } = useAccessibility();
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState<'es' | 'en'>('es');
   
-  // Estados para cambiar nombre y contraseña
-  const [showChangeNameModal, setShowChangeNameModal] = useState(false);
+  // Estados para cambiar contraseña
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-  const [newName, setNewName] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // Textos multiidioma simplificados
+  // Textos en español
   const texts = {
-    es: {
-      settings: 'Configuración',
-      darkMode: 'Modo Oscuro',
-      close: 'Cerrar',
-      userProfile: 'Perfil de Usuario',
-      changeName: 'Cambiar Nombre',
-      changePassword: 'Cambiar Contraseña',
-      logout: 'Cerrar Sesión',
-      logoutConfirm: '¿Estás seguro de que quieres cerrar sesión?',
-      cancel: 'Cancelar',
-      error: 'Error',
-      logoutError: 'Error al cerrar sesión'
-    },
-    en: {
-      settings: 'Settings',
-      darkMode: 'Dark Mode',
-      close: 'Close',
-      userProfile: 'User Profile',
-      changeName: 'Change Name',
-      changePassword: 'Change Password',
-      logout: 'Logout',
-      logoutConfirm: 'Are you sure you want to logout?',
-      cancel: 'Cancel',
-      error: 'Error',
-      logoutError: 'Logout error'
-    }
+    settings: 'Configuración',
+    darkMode: 'Modo Oscuro',
+    close: 'Cerrar',
+    userProfile: 'Perfil de Usuario',
+    changePassword: 'Cambiar Contraseña',
+    logout: 'Cerrar Sesión',
+    logoutConfirm: '¿Estás seguro de que quieres cerrar sesión?',
+    cancel: 'Cancelar',
+    error: 'Error',
+    logoutError: 'Error al cerrar sesión'
   };
-  
-  const currentTexts = texts[currentLanguage as keyof typeof texts];
 
   const handleSettingsPress = () => {
     setShowSettings(true);
@@ -69,29 +46,6 @@ export default function Header({
 
   const handleProfilePress = () => {
     setShowUserMenu(true);
-  };
-
-  const handleLanguageToggle = () => {
-    setCurrentLanguage(currentLanguage === 'es' ? 'en' : 'es');
-  };
-
-  const handleChangeName = async () => {
-    if (!newName.trim()) {
-      Alert.alert('Error', 'Por favor ingresa un nombre');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      Alert.alert('✅ Éxito', 'Tu nombre ha sido actualizado correctamente');
-      setShowChangeNameModal(false);
-      setNewName('');
-    } catch (error: any) {
-      console.error('Error al cambiar nombre:', error);
-      Alert.alert('Error', 'No se pudo actualizar el nombre. Intenta de nuevo.');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleChangePassword = async () => {
@@ -127,15 +81,15 @@ export default function Header({
 
   const handleLogout = async () => {
     Alert.alert(
-      currentTexts.logout,
-      currentTexts.logoutConfirm,
+      texts.logout,
+      texts.logoutConfirm,
       [
         {
-          text: currentTexts.cancel,
+          text: texts.cancel,
           style: 'cancel'
         },
         {
-          text: currentTexts.logout,
+          text: texts.logout,
           style: 'destructive',
           onPress: async () => {
             try {
@@ -143,7 +97,7 @@ export default function Header({
               router.replace('/ingreso');
             } catch (error) {
               console.error('Error al cerrar sesión:', error);
-              Alert.alert(currentTexts.error, currentTexts.logoutError);
+              Alert.alert(texts.error, texts.logoutError);
             }
           }
         }
@@ -275,20 +229,6 @@ export default function Header({
 
       {/* Right side buttons */}
       <View style={styles.rightButtons}>
-        {/* Language Toggle */}
-        {showLanguageToggle && (
-          <TouchableOpacity
-            style={styles.languageButton}
-            onPress={handleLanguageToggle}
-            accessibilityLabel={`Cambiar idioma a ${currentLanguage === 'es' ? 'inglés' : 'español'}`}
-            accessibilityRole="button"
-          >
-            <Text style={styles.languageFlag}>
-              {currentLanguage === 'es' ? '🇲🇽' : '🇺🇸'}
-            </Text>
-          </TouchableOpacity>
-        )}
-
         {/* User Profile */}
         {showProfile && (
           <TouchableOpacity
@@ -314,7 +254,7 @@ export default function Header({
         <View style={styles.modalOverlay}>
           <View style={dynamicStyles.modalContent}>
             <Text style={dynamicStyles.modalTitle}>
-              {currentTexts.settings}
+              {texts.settings}
             </Text>
             
             <TouchableOpacity
@@ -328,12 +268,12 @@ export default function Header({
                   );
                 }
               }}
-              accessibilityLabel={`${currentTexts.darkMode}: ${darkMode ? 'Activado' : 'Desactivado'}`}
+              accessibilityLabel={`${texts.darkMode}: ${darkMode ? 'Activado' : 'Desactivado'}`}
               accessibilityRole="switch"
               accessibilityState={{ checked: darkMode }}
             >
               <Ionicons name={darkMode ? "moon" : "sunny"} size={24} color={theme.colors.textPrimary} />
-              <Text style={dynamicStyles.settingText}>{currentTexts.darkMode}</Text>
+              <Text style={dynamicStyles.settingText}>{texts.darkMode}</Text>
               <Ionicons 
                 name={darkMode ? "toggle" : "toggle-outline"} 
                 size={24} 
@@ -344,10 +284,10 @@ export default function Header({
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowSettings(false)}
-              accessibilityLabel={currentTexts.close}
+              accessibilityLabel={texts.close}
               accessibilityRole="button"
             >
-              <Text style={styles.closeButtonText}>{currentTexts.close}</Text>
+              <Text style={styles.closeButtonText}>{texts.close}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -363,104 +303,42 @@ export default function Header({
         <View style={styles.modalOverlay}>
           <View style={dynamicStyles.modalContent}>
             <Text style={dynamicStyles.modalTitle}>
-              {currentTexts.userProfile}
+              {texts.userProfile}
             </Text>
             
-            <TouchableOpacity
-              style={dynamicStyles.userOption}
-              onPress={() => {
-                setShowUserMenu(false);
-                setShowChangeNameModal(true);
-              }}
-              accessibilityLabel={currentTexts.changeName}
-              accessibilityRole="button"
-            >
-              <Ionicons name="person-outline" size={24} color={theme.colors.textPrimary} />
-              <Text style={dynamicStyles.userOptionText}>{currentTexts.changeName}</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity
               style={dynamicStyles.userOption}
               onPress={() => {
                 setShowUserMenu(false);
                 setShowChangePasswordModal(true);
               }}
-              accessibilityLabel={currentTexts.changePassword}
+              accessibilityLabel={texts.changePassword}
               accessibilityRole="button"
             >
               <Ionicons name="lock-closed-outline" size={24} color={theme.colors.textPrimary} />
-              <Text style={dynamicStyles.userOptionText}>{currentTexts.changePassword}</Text>
+              <Text style={dynamicStyles.userOptionText}>{texts.changePassword}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={dynamicStyles.userOption}
               onPress={handleLogout}
-              accessibilityLabel={currentTexts.logout}
+              accessibilityLabel={texts.logout}
               accessibilityRole="button"
             >
               <Ionicons name="log-out-outline" size={24} color="#f44336" />
               <Text style={[dynamicStyles.userOptionText, { color: '#f44336' }]}>
-                {currentTexts.logout}
+                {texts.logout}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setShowUserMenu(false)}
-              accessibilityLabel={currentTexts.close}
+              accessibilityLabel={texts.close}
               accessibilityRole="button"
             >
-              <Text style={styles.closeButtonText}>{currentTexts.close}</Text>
+              <Text style={styles.closeButtonText}>{texts.close}</Text>
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Change Name Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showChangeNameModal}
-        onRequestClose={() => setShowChangeNameModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={dynamicStyles.modalContent}>
-            <Text style={dynamicStyles.modalTitle}>
-              {currentTexts.changeName}
-            </Text>
-            
-            <Text style={dynamicStyles.inputLabel}>Nuevo Nombre</Text>
-            <TextInput
-              style={dynamicStyles.modalInput}
-              placeholder="Ingresa tu nuevo nombre"
-              placeholderTextColor={theme.colors.textMuted}
-              value={newName}
-              onChangeText={setNewName}
-              autoCapitalize="words"
-            />
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setShowChangeNameModal(false);
-                  setNewName('');
-                }}
-                disabled={loading}
-              >
-                <Text style={styles.cancelButtonText}>{currentTexts.cancel}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.confirmButton, loading && styles.disabledButton]}
-                onPress={handleChangeName}
-                disabled={loading}
-              >
-                <Text style={styles.confirmButtonText}>
-                  {loading ? 'Guardando...' : 'Guardar'}
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </Modal>
@@ -475,7 +353,7 @@ export default function Header({
         <View style={styles.modalOverlay}>
           <View style={dynamicStyles.modalContent}>
             <Text style={dynamicStyles.modalTitle}>
-              {currentTexts.changePassword}
+              {texts.changePassword}
             </Text>
             
             <Text style={dynamicStyles.inputLabel}>Contraseña Actual</Text>
@@ -522,7 +400,7 @@ export default function Header({
                 }}
                 disabled={loading}
               >
-                <Text style={styles.cancelButtonText}>{currentTexts.cancel}</Text>
+                <Text style={styles.cancelButtonText}>{texts.cancel}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -547,17 +425,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-  },
-  languageButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  languageFlag: {
-    fontSize: 20,
   },
   profileButton: {
     width: 40,
