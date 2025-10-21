@@ -7,12 +7,13 @@ import SectionGrid from "../../components/ui/SectionGrid";
 import Header from "../../components/ui/header";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 
+
 export default function AlumnoHome() {
   const router = useRouter();
   const { theme, fontSizes, colorBlindMode, screenReaderEnabled, speakNavigation, speakText } = useThemedStyles();
 
   // En la vida real, viene de tu store/auth  
-  const userName = "Oscar";
+  const userName = "Gustavo";
 
   // Anunciar la pantalla cuando se carga
   useEffect(() => {
