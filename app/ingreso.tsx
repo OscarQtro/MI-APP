@@ -14,7 +14,7 @@ import { router } from "expo-router";
 import SceneDecorImages from "../components/SceneDecorImages-auth";
 import { authStyles as a } from "../styles/auth.styles";
 import { useThemedStyles } from "../hooks/useThemedStyles";
-import { loginConValidacion } from "../login-validacion-estricta";
+import { loginConValidacion } from "../src/auth/login-validacion-estricta";
 
 const isEmail = (v: string) => /\S+@\S+\.\S+/.test(v);
 
